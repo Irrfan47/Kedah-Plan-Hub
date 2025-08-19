@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Eye, Edit, Trash, Send, FileText, MessageSquare, Upload, Check, X, Download, HelpCircle, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, History } from 'lucide-react';
+import { Plus, Eye, Edit, Trash, Send, FileText, MessageSquare, Upload, Check, X, Download, HelpCircle, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, History, Wallet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   getPrograms,
@@ -217,6 +217,13 @@ export default function ProgramManagement() {
   const [isRejectConfirmModalOpen, setIsRejectConfirmModalOpen] = useState(false);
   const [isCompleteSendToMMKModalOpen, setIsCompleteSendToMMKModalOpen] = useState(false);
   const [expandedStatusTimelines, setExpandedStatusTimelines] = useState<{ [key: string]: boolean }>({});
+  
+  // Query details modal state
+  const [isQueryDetailsModalOpen, setIsQueryDetailsModalOpen] = useState(false);
+  const [selectedQueryDetails, setSelectedQueryDetails] = useState<any>(null);
+  
+  // EFT details modal state
+  const [isEftDetailsModalOpen, setIsEftDetailsModalOpen] = useState(false);
   
   // Pagination state for EXCO users
   const [currentPage, setCurrentPage] = useState(1);
@@ -1146,6 +1153,18 @@ export default function ProgramManagement() {
     }
   };
 
+  // Helper function to open query details modal
+  const openQueryDetailsModal = (program: any) => {
+    setSelectedQueryDetails(program);
+    setIsQueryDetailsModalOpen(true);
+  };
+
+  // Helper function to open EFT details modal
+  const openEftDetailsModal = (program: any) => {
+    setSelectedQueryDetails(program);
+    setIsEftDetailsModalOpen(true);
+  };
+
   // Helper function to get payment completion timestamp
   const getPaymentCompletionTimestamp = (program: any) => {
     if (!program.status_history || !Array.isArray(program.status_history)) {
@@ -1305,11 +1324,33 @@ export default function ProgramManagement() {
                   return (
                     <div key={status.key} className="flex flex-col items-center relative flex-shrink-0">
                       {/* Status Circle */}
-                      <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${
-                        isCompleted ? status.color : 'bg-gray-300'
-                      } ${isCurrent ? 'ring-4 ring-blue-200' : ''}`}>
-                        <Icon className={`h-5 w-5 ${isCompleted ? 'text-white' : 'text-gray-500'}`} />
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div 
+                              className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${
+                                isCompleted ? status.color : 'bg-gray-300'
+                              } ${isCurrent ? 'ring-4 ring-blue-200' : ''} ${
+                                (status.key === 'query' || status.key === 'query_answered') && isCompleted && user?.role === 'finance_mmk'
+                                  ? 'cursor-pointer hover:scale-110 transition-transform'
+                                  : ''
+                              }`}
+                              onClick={() => {
+                                if ((status.key === 'query' || status.key === 'query_answered') && isCompleted && user?.role === 'finance_mmk') {
+                                  openQueryDetailsModal(program);
+                                }
+                              }}
+                            >
+                              <Icon className={`h-5 w-5 ${isCompleted ? 'text-white' : 'text-gray-500'}`} />
+                            </div>
+                          </TooltipTrigger>
+                          {(status.key === 'query' || status.key === 'query_answered') && isCompleted && user?.role === 'finance_mmk' ? (
+                            <TooltipContent>
+                              <p>Click to view query details</p>
+                            </TooltipContent>
+                          ) : null}
+                        </Tooltip>
+                      </TooltipProvider>
                       
                       {/* Status Label */}
                       <div className="mt-2 text-center max-w-[140px] px-1">
@@ -1339,11 +1380,63 @@ export default function ProgramManagement() {
                       </div>
                     </div>
                   );
-                }                  )}
+                })}
+                
+                {/* EFT Number Circle - Right End */}
+                <div className="flex flex-col items-center relative flex-shrink-0">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div 
+                          className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${
+                            (program.voucher_number || program.voucherNumber) && (program.eft_number || program.eftNumber) && (program.eft_date)
+                              ? 'bg-green-500 cursor-pointer hover:scale-110 transition-transform'
+                              : 'bg-gray-300'
+                          }`}
+                          onClick={() => {
+                            if ((program.voucher_number || program.eft_number || program.eftNumber) && (program.voucher_number || program.voucherNumber) && (program.eft_date)) {
+                              openEftDetailsModal(program);
+                            }
+                          }}
+                        >
+                          <Wallet className="h-5 w-5 text-white" />
+                        </div>
+                      </TooltipTrigger>
+                      {(program.voucher_number || program.voucherNumber) && (program.eft_number || program.eftNumber) && (program.eft_date) ? (
+                        <TooltipContent>
+                          <p>Click to view EFT details</p>
+                        </TooltipContent>
+                      ) : (
+                        <TooltipContent>
+                          <p>EFT details not available</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  {/* EFT Label */}
+                  <div className="mt-2 text-center max-w-[140px] px-1">
+                    <div className={`text-xs font-medium ${
+                      (program.voucher_number || program.voucherNumber) && (program.eft_number || program.eftNumber) && (program.eft_date)
+                        ? 'text-gray-900'
+                        : 'text-gray-500'
+                    } whitespace-nowrap leading-tight`}>
+                      EFT Details
+                    </div>
+                    {(program.voucher_number || program.voucherNumber) && (program.eft_number || program.eftNumber) && (program.eft_date) ? (
+                      <div className="text-xs text-green-600 font-medium mt-1">
+                        Available
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-400 mt-1">
+                        Not Available
+                      </div>
+                    )}
+                  </div>
                 </div>
-
               </div>
             </div>
+          </div>
         )}
       </div>
     );
@@ -4120,6 +4213,154 @@ export default function ProgramManagement() {
               >
                 Mark as Complete
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Query Details Modal */}
+      <Dialog open={isQueryDetailsModalOpen} onOpenChange={setIsQueryDetailsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Queries - {selectedQueryDetails?.program_name || selectedQueryDetails?.programName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedQueryDetails && selectedQueryDetails.queries && selectedQueryDetails.queries.length > 0 ? (
+              selectedQueryDetails.queries.map((query: any, index: number) => (
+                <div key={query.id || index}>
+                  <Label>Query Details</Label>
+                  <div className="p-4 border rounded bg-muted">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="font-medium text-sm">Query:</p>
+                        <p className="text-sm mt-1">{query.question || query.message || 'No question text available'}</p>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {(query.answered === 1 || query.is_answered) ? 'Answered' : 'Pending'}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      <p>Asked by: {query.created_by || 'Unknown'}</p>
+                      <p>Date: {query.created_at ? new Date(query.created_at).toLocaleDateString() : 'Unknown'} at {query.created_at ? new Date(query.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Unknown'}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Show Answer if available */}
+                  {(query.answered === 1 || query.is_answered) && query.answer && (
+                    <div className="mt-4">
+                      <Label>Answer</Label>
+                      <div className="p-3 border rounded bg-green-50 border-l-4 border-green-500">
+                        <p className="text-sm">{query.answer}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Answered by: {query.answered_by || 'EXCO User'} on {query.answered_at ? new Date(query.answered_at).toLocaleDateString() : 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Debug info - remove this later */}
+                  <div className="mt-2 text-xs text-gray-400">
+                    <p>Debug: answered={query.answered}, is_answered={query.is_answered}, has_answer={!!query.answer}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <MessageSquare className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                <p>No queries found for this program</p>
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" onClick={() => {
+                      setIsQueryDetailsModalOpen(false);
+                      setSelectedQueryDetails(null);
+                    }}>
+                      Close
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Close query details</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* EFT Details Modal */}
+      <Dialog open={isEftDetailsModalOpen} onOpenChange={setIsEftDetailsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>EFT Details - {selectedQueryDetails?.program_name || selectedQueryDetails?.programName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedQueryDetails && (
+              <>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-lg mb-2">
+                    Program: {selectedQueryDetails.program_name || selectedQueryDetails.programName}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Budget: RM {(selectedQueryDetails.budget || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+
+                {/* EFT Information */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-md border-b pb-2">Payment Information</h4>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <Label>Voucher Number</Label>
+                      <div className="p-3 border rounded bg-muted">
+                        <p className="text-sm font-medium">
+                          {selectedQueryDetails.voucher_number || selectedQueryDetails.voucherNumber || 'Not available'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label>EFT Number</Label>
+                      <div className="p-3 border rounded bg-muted">
+                        <p className="text-sm font-medium">
+                          {selectedQueryDetails.eft_number || selectedQueryDetails.eftNumber || 'Not available'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label>EFT Date</Label>
+                      <div className="p-3 border rounded bg-muted">
+                        <p className="text-sm font-medium">
+                          {selectedQueryDetails.eft_date ? new Date(selectedQueryDetails.eft_date).toLocaleDateString('en-MY') : 'Not available'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+            
+            <div className="flex justify-end gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" onClick={() => {
+                      setIsEftDetailsModalOpen(false);
+                      setSelectedQueryDetails(null);
+                    }}>
+                      Close
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Close EFT details</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </DialogContent>
