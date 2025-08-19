@@ -1,0 +1,237 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Professional Program Management System Design */
+
+@layer base {
+  :root {
+    /* Professional Blue Theme */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    /* Primary - Professional Blue */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 217 91% 55%;
+    --primary-light: 217 91% 95%;
+
+    /* Secondary - Professional Gray */
+    --secondary: 215 25% 27%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 215 25% 95%;
+
+    /* Success - Professional Green */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 95%;
+
+    /* Warning - Professional Orange */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 92% 95%;
+
+    /* Danger - Professional Red */
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 0% 100%;
+    --danger-light: 0 84% 95%;
+
+    /* Neutral Colors */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 9% 15%;
+
+    /* Card and UI Elements */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Sidebar */
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 95%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 15%;
+    --sidebar-accent-foreground: 210 40% 95%;
+    --sidebar-border: 222 47% 20%;
+    --sidebar-ring: 217 91% 60%;
+
+    /* Professional Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 70%));
+    --gradient-secondary: linear-gradient(135deg, hsl(215 25% 27%), hsl(215 25% 35%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 45%));
+    --gradient-hero: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(215 25% 27%) 100%);
+
+    /* Professional Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 13% 91% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 13% 91% / 0.1), 0 2px 4px -1px hsl(220 13% 91% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(220 13% 91% / 0.1), 0 4px 6px -2px hsl(220 13% 91% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(220 13% 91% / 0.1), 0 10px 10px -5px hsl(220 13% 91% / 0.04);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s ease-in-out;
+
+    --radius: 0.75rem;
+  }
+
+  /* Custom Scrollbar Styles */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+    margin: 4px 0;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+    min-height: 40px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:active {
+    background: #64748b;
+  }
+
+  /* Firefox scrollbar */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 84% 4.9%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary-hover transition-colors duration-200;
+  }
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary-light transition-colors duration-200;
+  }
+  .btn-success {
+    @apply bg-success text-success-foreground hover:bg-success-light transition-colors duration-200;
+  }
+  .btn-warning {
+    @apply bg-warning text-warning-foreground hover:bg-warning-light transition-colors duration-200;
+  }
+  .btn-danger {
+    @apply bg-danger text-danger-foreground hover:bg-danger-light transition-colors duration-200;
+  }
+
+  .card-elevated {
+    @apply shadow-lg hover:shadow-xl transition-shadow duration-300;
+  }
+  .card-stats {
+    @apply bg-gradient-to-br from-primary-light to-white border border-primary/20;
+  }
+
+  .status-draft {
+    @apply bg-gray-100 text-gray-800 border-gray-300;
+  }
+  .status-under-review {
+    @apply bg-yellow-100 text-yellow-800 border-yellow-300;
+  }
+  .status-approved {
+    @apply bg-green-100 text-green-800 border-green-300;
+  }
+  .status-rejected {
+    @apply bg-red-100 text-red-800 border-red-300;
+  }
+  .status-query {
+    @apply bg-orange-100 text-orange-800 border-orange-300;
+  }
+}
+
+/* Mobile Zoom Controls */
+@layer utilities {
+  .mobile-zoom-out {
+    /* Apply zoom-out on mobile devices for pages that need to see full content */
+    @media (max-width: 768px) {
+      transform: scale(0.75);
+      transform-origin: top left;
+      width: 133.33%; /* Compensate for scale to maintain full width */
+      min-height: 133.33vh; /* Compensate for scale to maintain full height */
+    }
+  }
+  
+  .mobile-zoom-out-sm {
+    /* Smaller zoom-out for medium mobile screens */
+    @media (max-width: 640px) {
+      transform: scale(0.7);
+      transform-origin: top left;
+      width: 142.86%; /* Compensate for scale */
+      min-height: 142.86vh; /* Compensate for scale */
+    }
+  }
+  
+  .mobile-zoom-out-xs {
+    /* Larger zoom-out for small mobile screens */
+    @media (max-width: 480px) {
+      transform: scale(0.65);
+      transform-origin: top left;
+      width: 153.85%; /* Compensate for scale */
+      min-height: 153.85vh; /* Compensate for scale */
+    }
+  }
+}
