@@ -1990,7 +1990,6 @@ export default function ProgramManagement() {
                       <TableHead className="w-1/8">{t('status.voucher_no')}</TableHead>
                       <TableHead className="w-1/8">{t('status.eft_no')}</TableHead>
                       <TableHead className="w-1/8">EFT Date</TableHead>
-                      <TableHead className="w-1/8">{t('programs.created_at')}</TableHead>
                       <TableHead className="w-1/6">{t('programs.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -2039,7 +2038,6 @@ export default function ProgramManagement() {
                           <TableCell className="text-xs">
                             {program.eft_date ? new Date(program.eft_date).toLocaleDateString('en-MY') : '-'}
                           </TableCell>
-                          <TableCell>{new Date(program.created_at || program.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell>
                           <div className="flex gap-2">
                             {/* EXCO user: always show remarks/details button */}
