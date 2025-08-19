@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status = $data['status'] ?? '';
     $voucher_number = $data['voucher_number'] ?? null;
     $eft_number = $data['eft_number'] ?? null;
+    $eft_date = $data['eft_date'] ?? null;
     
     if (!$program_id || !$status) {
         echo json_encode(['success' => false, 'message' => 'Program ID and status are required.']);
@@ -32,10 +33,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Update program status
-    if ($status === 'payment_completed' && ($voucher_number || $eft_number)) {
-        // For payment_completed status, update with voucher and EFT numbers
-        $stmt = $conn->prepare('UPDATE programs SET status = ?, voucher_number = ?, eft_number = ? WHERE id = ?');
-        $stmt->bind_param('sssi', $status, $voucher_number, $eft_number, $program_id);
+    if ($status === 'payment_completed' && ($voucher_number || $eft_number || $eft_date)) {
+        // For payment_completed status, update with voucher, EFT numbers, and EFT date
+        $stmt = $conn->prepare('UPDATE programs SET status = ?, voucher_number = ?, eft_number = ?, eft_date = ? WHERE id = ?');
+        $stmt->bind_param('ssssi', $status, $voucher_number, $eft_number, $eft_date, $program_id);
     } else {
         // For other statuses, just update the status
         $stmt = $conn->prepare('UPDATE programs SET status = ? WHERE id = ?');

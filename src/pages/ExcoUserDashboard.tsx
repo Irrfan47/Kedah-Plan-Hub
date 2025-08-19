@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Users, FileText, CheckCircle, XCircle, Clock, Settings, Wallet } from "lucide-react";
+import { ArrowLeft, Users, FileText, CheckCircle, XCircle, Clock, Settings, Wallet, ChevronDown, ChevronUp } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getExcoUserDashboard, updateExcoUserBudget } from "@/api/backend";
@@ -13,6 +13,7 @@ import { BASE_URL } from "@/api/backend";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ExcoUser {
   id: number;
@@ -59,6 +60,9 @@ export default function ExcoUserDashboard() {
   const [paymentCompletedData, setPaymentCompletedData] = useState<any[]>([]);
   const [rejectedData, setRejectedData] = useState<any[]>([]);
   const [pendingData, setPendingData] = useState<any[]>([]);
+  
+  // Collapsible state for recent programs
+  const [isRecentProgramsOpen, setIsRecentProgramsOpen] = useState(false);
 
   useEffect(() => {
     // Get EXCO user data from navigation state
@@ -525,35 +529,52 @@ export default function ExcoUserDashboard() {
       {/* Recent Programs */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('exco.dashboard.recent_programs')}</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            {t('exco.dashboard.recent_programs')}
+            <Collapsible open={isRecentProgramsOpen} onOpenChange={setIsRecentProgramsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  {isRecentProgramsOpen ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+            </Collapsible>
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          {dashboardData?.recent_programs && dashboardData.recent_programs.length > 0 ? (
-            <div className="space-y-4">
-              {dashboardData.recent_programs.map((program: any) => (
-                <div key={program.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{program.program_name}</h3>
-                    <p className="text-sm text-gray-600">
-                      {t('programs.budget')}: RM {(program.budget || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <Badge 
-                    variant={
-                      program.status === 'payment_completed' ? 'default' :
-                      program.status === 'rejected' ? 'destructive' :
-                      program.status === 'pending' ? 'secondary' : 'outline'
-                    }
-                  >
-                    {t(getStatusLabel(program.status))}
-                  </Badge>
+        <Collapsible open={isRecentProgramsOpen} onOpenChange={setIsRecentProgramsOpen}>
+          <CollapsibleContent>
+            <CardContent>
+              {dashboardData?.recent_programs && dashboardData.recent_programs.length > 0 ? (
+                <div className="space-y-4">
+                  {dashboardData.recent_programs.map((program: any) => (
+                    <div key={program.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{program.program_name}</h3>
+                        <p className="text-sm text-gray-600">
+                          {t('programs.budget')}: RM {(program.budget || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <Badge 
+                        variant={
+                          program.status === 'payment_completed' ? 'default' :
+                          program.status === 'rejected' ? 'destructive' :
+                          program.status === 'pending' ? 'secondary' : 'outline'
+                        }
+                      >
+                        {t(getStatusLabel(program.status))}
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-4">{t('exco.dashboard.no_recent_programs')}</p>
-          )}
-        </CardContent>
+              ) : (
+                <p className="text-gray-500 text-center py-4">{t('exco.dashboard.no_recent_programs')}</p>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
       </Card>
 
       {/* Program Detail Modals */}

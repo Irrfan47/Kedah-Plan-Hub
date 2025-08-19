@@ -11,6 +11,7 @@ interface ExcoUser {
   full_name: string;
   email: string;
   phone_number: string;
+  profile_picture: string | null;
   cropped_profile_picture: string | null;
   portfolio: string;
 }
@@ -85,9 +86,9 @@ export default function PusatKhidmat() {
           </CardHeader>
           <CardContent className="text-center">
             <div className="mb-4">
-              {excoUser.cropped_profile_picture ? (
+              {excoUser.profile_picture ? (
                 <img 
-                  src={excoUser.cropped_profile_picture} 
+                  src={excoUser.profile_picture} 
                   alt={excoUser.full_name}
                   className="w-32 h-32 mx-auto object-cover rounded-full shadow-md border-4 border-blue-100"
                 />

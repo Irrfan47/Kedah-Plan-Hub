@@ -450,11 +450,11 @@ export async function updateProgram(programId, program) {
 }
 
 // 9. Example: Change program status
-export async function changeProgramStatus(program_id, status, voucher_number, eft_number) {
+export async function changeProgramStatus(program_id, status, voucher_number, eft_number, eft_date) {
   const res = await fetch(`${BASE_URL}/program_status.php`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ program_id, status, voucher_number, eft_number }),
+    body: JSON.stringify({ program_id, status, voucher_number, eft_number, eft_date }),
   });
   return res.json();
 }
@@ -637,6 +637,37 @@ export async function answerQuery(queryId, answer, answeredBy) {
 // Get EXCO users
 export async function getExcoUsers() {
   const res = await fetch(`${BASE_URL}/exco_users.php`);
+  return res.json();
+}
+
+export async function getUserNotifications(excoUserId) {
+  const res = await fetch(`${BASE_URL}/user_notifications.php?exco_user_id=${excoUserId}`);
+  return res.json();
+}
+
+export async function markUserNotificationAsRead(excoUserId, notificationId = null) {
+  const res = await fetch(`${BASE_URL}/user_notifications.php`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      exco_user_id: excoUserId, 
+      notification_id: notificationId,
+      mark_all: !notificationId 
+    }),
+  });
+  return res.json();
+}
+
+export async function deleteUserNotification(excoUserId, notificationId = null) {
+  const res = await fetch(`${BASE_URL}/user_notifications.php`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      exco_user_id: excoUserId, 
+      notification_id: notificationId,
+      delete_all: !notificationId 
+    }),
+  });
   return res.json();
 }
 

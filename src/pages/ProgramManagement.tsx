@@ -54,6 +54,7 @@ interface Program {
   signedDocuments?: Document[];
   voucherNumber?: string;
   eftNumber?: string;
+  eftDate?: string;
   remarks: Array<{
     id: string;
     message: string;
@@ -83,6 +84,7 @@ const mockPrograms: Program[] = [
     ],
     voucherNumber: 'V2024001',
     eftNumber: 'EFT2024001',
+    eftDate: '2024-01-20',
     remarks: [
       { id: '1', message: 'Initial submission', createdBy: 'Siti binti Rahman', createdAt: '2024-01-15', role: 'exco_user' },
       { id: '2', message: 'Approved for implementation', createdBy: 'Fatimah binti Omar', createdAt: '2024-01-20', role: 'finance' }
@@ -152,6 +154,7 @@ export default function ProgramManagement() {
   // Approve modal states for voucher/EFT numbers
   const [voucherNumber, setVoucherNumber] = useState('');
   const [eftNumber, setEftNumber] = useState('');
+  const [eftDate, setEftDate] = useState('');
 
   // Form states
   const [formData, setFormData] = useState({
@@ -825,8 +828,8 @@ export default function ProgramManagement() {
     }
   };
 
-  const handleCompletePayment = async (programId: string, voucherNumber: string, eftNumber: string) => {
-    const res = await changeProgramStatus(programId, 'payment_completed', voucherNumber, eftNumber);
+  const handleCompletePayment = async (programId: string, voucherNumber: string, eftNumber: string, eftDate: string) => {
+    const res = await changeProgramStatus(programId, 'payment_completed', voucherNumber, eftNumber, eftDate);
     if (res.success) {
       toast({ title: t('common.success'), description: 'Payment completed successfully' });
       // Refresh programs
@@ -1986,7 +1989,7 @@ export default function ProgramManagement() {
                       <TableHead className="w-1/8">{t('programs.status')}</TableHead>
                       <TableHead className="w-1/8">{t('status.voucher_no')}</TableHead>
                       <TableHead className="w-1/8">{t('status.eft_no')}</TableHead>
-                      <TableHead className="w-1/8">EFT & Voucher Created at</TableHead>
+                      <TableHead className="w-1/8">EFT Date</TableHead>
                       <TableHead className="w-1/8">{t('programs.created_at')}</TableHead>
                       <TableHead className="w-1/6">{t('programs.actions')}</TableHead>
                     </TableRow>
@@ -2034,7 +2037,7 @@ export default function ProgramManagement() {
                           <TableCell className="text-xs">{program.voucher_number || program.voucherNumber || '-'}</TableCell>
                           <TableCell className="text-xs">{program.eft_number || program.eftNumber || '-'}</TableCell>
                           <TableCell className="text-xs">
-                            {getPaymentCompletionTimestamp(program)}
+                            {program.eft_date ? new Date(program.eft_date).toLocaleDateString('en-MY') : '-'}
                           </TableCell>
                           <TableCell>{new Date(program.created_at || program.createdAt).toLocaleDateString()}</TableCell>
                           <TableCell>
@@ -3984,6 +3987,15 @@ export default function ProgramManagement() {
                   onChange={(e) => setEftNumber(e.target.value)}
                 />
               </div>
+              <div>
+                <Label htmlFor="eftDate">EFT Date *</Label>
+                <Input
+                  id="eftDate"
+                  type="date"
+                  value={eftDate}
+                  onChange={(e) => setEftDate(e.target.value)}
+                />
+              </div>
             </div>
             
             <div className="flex justify-end gap-2">
@@ -3994,23 +4006,25 @@ export default function ProgramManagement() {
                   setProgramToCompletePayment(null);
                   setVoucherNumber('');
                   setEftNumber('');
+                  setEftDate('');
                 }}
               >
                 Cancel
               </Button>
               <Button 
                 onClick={() => {
-                  if (!voucherNumber.trim() || !eftNumber.trim()) {
+                  if (!voucherNumber.trim() || !eftNumber.trim() || !eftDate.trim()) {
                     toast({
                       title: "Error",
-                      description: "Please enter both voucher number and EFT number",
+                      description: "Please enter voucher number, EFT number, and EFT date",
                       variant: "destructive"
                     });
                     return;
                   }
-                  handleCompletePayment(programToCompletePayment.id, voucherNumber.trim(), eftNumber.trim());
+                  handleCompletePayment(programToCompletePayment.id, voucherNumber.trim(), eftNumber.trim(), eftDate.trim());
                   setVoucherNumber('');
                   setEftNumber('');
+                  setEftDate('');
                 }}
               >
                 Complete Payment

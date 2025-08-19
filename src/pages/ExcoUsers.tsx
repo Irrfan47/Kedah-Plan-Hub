@@ -7,12 +7,14 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getExcoUsers } from "@/api/backend";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserNotificationBadge } from "@/components/UserNotificationBadge";
 
 interface ExcoUser {
   id: number;
   full_name: string;
   email: string;
   phone_number: string;
+  profile_picture: string | null;
   cropped_profile_picture: string | null;
   portfolio: string;
 }
@@ -64,6 +66,7 @@ export default function ExcoUsers() {
           full_name: excoUser.full_name,
           email: excoUser.email,
           phone_number: excoUser.phone_number,
+          profile_picture: excoUser.profile_picture,
           cropped_profile_picture: excoUser.cropped_profile_picture,
           portfolio: excoUser.portfolio
         }
@@ -80,6 +83,7 @@ export default function ExcoUsers() {
           full_name: excoUser.full_name,
           email: excoUser.email,
           phone_number: excoUser.phone_number,
+          profile_picture: excoUser.profile_picture,
           cropped_profile_picture: excoUser.cropped_profile_picture,
           portfolio: excoUser.portfolio
         }
@@ -153,10 +157,18 @@ export default function ExcoUsers() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {users.map((user) => (
-            <Card 
-              key={user.id} 
-              className="hover:shadow-lg transition-shadow hover:scale-105 transform duration-200"
-            >
+                         <Card 
+               key={user.id} 
+               className="relative"
+             >
+                             {/* Notification Badge - Top Right */}
+               <div className="absolute top-3 right-3 z-20">
+                 <UserNotificationBadge 
+                   excoUserId={user.id} 
+                   excoUserName={user.full_name} 
+                 />
+               </div>
+              
               <CardContent className="p-6 text-center">
                 <div className="mb-4">
                   {user.cropped_profile_picture ? (

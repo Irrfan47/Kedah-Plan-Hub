@@ -13,7 +13,7 @@ require_once 'config.php';
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         // Get all exco_users with their profile information
-        $stmt = $conn->prepare('SELECT id, full_name, email, phone_number, cropped_profile_picture, portfolio FROM users WHERE role = "exco_user" AND is_active = 1');
+        $stmt = $conn->prepare('SELECT id, full_name, email, phone_number, profile_picture, cropped_profile_picture, portfolio FROM users WHERE role = "exco_user" AND is_active = 1');
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -24,9 +24,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 'full_name' => $row['full_name'],
                 'email' => $row['email'],
                 'phone_number' => $row['phone_number'],
+                'profile_picture' => null,
                 'cropped_profile_picture' => null,
                 'portfolio' => $row['portfolio']
             ];
+            
+            // Convert profile picture to base64 if it exists
+            if ($row['profile_picture']) {
+                $base64_image = base64_encode($row['profile_picture']);
+                $user['profile_picture'] = 'data:image/jpeg;base64,' . $base64_image;
+            }
             
             // Convert cropped profile picture to base64 if it exists
             if ($row['cropped_profile_picture']) {
