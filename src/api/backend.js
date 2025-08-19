@@ -2,7 +2,7 @@
 
 // Base URL for your PHP backend
 // For root domain hosting, this should point to the api folder at root
-export const BASE_URL = '/api';
+export const BASE_URL = '/Nurkamal/kedah-plan-hub-production/api';
 
 // 1. Login
 export async function login(email, password) {

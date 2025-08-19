@@ -8,7 +8,7 @@ export default defineConfig(({ command, mode }) => {
   const timestamp = Date.now();
 
   return {
-    base: '/', // For root domain hosting
+    base: '/Nurkamal/kedah-plan-hub-production/', // For root domain hosting
     plugins: [react()],
     resolve: {
       alias: {

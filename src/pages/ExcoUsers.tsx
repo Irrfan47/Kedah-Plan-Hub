@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getExcoUsers } from "@/api/backend";
@@ -12,7 +13,7 @@ interface ExcoUser {
   full_name: string;
   email: string;
   phone_number: string;
-  profile_picture: string | null;
+  cropped_profile_picture: string | null;
   portfolio: string;
 }
 
@@ -54,7 +55,7 @@ export default function ExcoUsers() {
       .toUpperCase();
   };
 
-  const handleUserClick = (excoUser: ExcoUser) => {
+  const handlePortfolioClick = (excoUser: ExcoUser) => {
     // Navigate to individual EXCO user dashboard
     navigate(`/exco-user-dashboard/${excoUser.id}`, { 
       state: { 
@@ -63,7 +64,23 @@ export default function ExcoUsers() {
           full_name: excoUser.full_name,
           email: excoUser.email,
           phone_number: excoUser.phone_number,
-          profile_picture: excoUser.profile_picture,
+          cropped_profile_picture: excoUser.cropped_profile_picture,
+          portfolio: excoUser.portfolio
+        }
+      }
+    });
+  };
+
+  const handlePusatKhidmatClick = (excoUser: ExcoUser) => {
+    // Navigate to Pusat Khidmat page (you can modify this route as needed)
+    navigate(`/pusat-khidmat/${excoUser.id}`, { 
+      state: { 
+        excoUser: {
+          id: excoUser.id,
+          full_name: excoUser.full_name,
+          email: excoUser.email,
+          phone_number: excoUser.phone_number,
+          cropped_profile_picture: excoUser.cropped_profile_picture,
           portfolio: excoUser.portfolio
         }
       }
@@ -86,10 +103,10 @@ export default function ExcoUsers() {
           {Array.from({ length: 8 }).map((_, index) => (
             <Card key={index} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-6 text-center">
-                <Skeleton className="w-48 h-60 rounded-lg mx-auto mb-4" />
+                <Skeleton className="w-32 h-32 rounded-full mx-auto mb-4" />
                 <Skeleton className="h-6 w-32 mx-auto mb-2" />
-                <Skeleton className="h-4 w-40 mx-auto mb-2" />
-                <Skeleton className="h-4 w-28 mx-auto" />
+                <Skeleton className="h-10 w-24 mx-auto mb-2" />
+                <Skeleton className="h-10 w-32 mx-auto" />
               </CardContent>
             </Card>
           ))}
@@ -118,7 +135,7 @@ export default function ExcoUsers() {
           {t('exco.users.title', 'EXCO Users Directory')}
         </h1>
         <p className="text-gray-600">
-          {t('exco.users.description', 'Click on any EXCO user to view their dashboard')}
+          {t('exco.users.description', 'View all EXCO users and their contact information')}
         </p>
         <Badge variant="secondary" className="mt-2">
           {users.length} {t('exco.users.count', 'users')}
@@ -138,35 +155,43 @@ export default function ExcoUsers() {
           {users.map((user) => (
             <Card 
               key={user.id} 
-              className="hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-              onClick={() => handleUserClick(user)}
+              className="hover:shadow-lg transition-shadow hover:scale-105 transform duration-200"
             >
               <CardContent className="p-6 text-center">
                 <div className="mb-4">
-                  {user.profile_picture ? (
+                  {user.cropped_profile_picture ? (
                     <img 
-                      src={user.profile_picture} 
+                      src={user.cropped_profile_picture} 
                       alt={user.full_name}
-                      className="w-48 h-60 mx-auto object-cover rounded-lg shadow-md"
+                      className="w-32 h-32 mx-auto object-cover rounded-full shadow-md border-4 border-blue-100"
                     />
                   ) : (
-                    <div className="w-48 h-60 mx-auto bg-gray-200 rounded-lg flex items-center justify-center">
-                      <span className="text-2xl text-gray-500 font-semibold">
+                    <div className="w-32 h-32 mx-auto bg-blue-100 rounded-full flex items-center justify-center border-4 border-blue-200">
+                      <span className="text-2xl text-blue-600 font-semibold">
                         {getUserInitials(user.full_name)}
                       </span>
                     </div>
                   )}
                 </div>
                 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-gray-900 text-center leading-tight">
                     {user.full_name}
                   </h3>
                   
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p className="text-center break-words" title={user.portfolio}>
-                      {user.portfolio || t('exco.users.no_portfolio', 'No portfolio')}
-                    </p>
+                  <div className="flex space-x-2">
+                    <Button 
+                      onClick={() => handlePortfolioClick(user)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Portfolio
+                    </Button>
+                    <Button 
+                      onClick={() => handlePusatKhidmatClick(user)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Pusat Khidmat
+                    </Button>
                   </div>
                 </div>
               </CardContent>

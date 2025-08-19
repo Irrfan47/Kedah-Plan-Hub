@@ -15,6 +15,7 @@ const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ExcoUsers = lazy(() => import("./pages/ExcoUsers"));
 const ExcoUserDashboard = lazy(() => import("./pages/ExcoUserDashboard"));
+const PusatKhidmat = lazy(() => import("./pages/PusatKhidmat"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
 const StatusTracking = lazy(() => import("./pages/StatusTracking"));
 const ProgramManagement = lazy(() => import("./pages/ProgramManagement"));
@@ -41,7 +42,7 @@ const App = () => {
             <PerformanceMonitor enabled={false} />
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            <BrowserRouter basename="/Nurkamal/kedah-plan-hub-production">
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
                   <Route path="/" element={
@@ -63,6 +64,11 @@ const App = () => {
                   <Route path="/exco-user-dashboard/:userId" element={
                     <ProtectedRoute>
                       <ExcoUserDashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/pusat-khidmat/:userId" element={
+                    <ProtectedRoute>
+                      <PusatKhidmat />
                     </ProtectedRoute>
                   } />
                   <Route path="/users" element={
