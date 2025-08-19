@@ -1985,7 +1985,8 @@ export default function ProgramManagement() {
                       <TableHead className="w-16">No.</TableHead>
                       <TableHead className="w-1/6">{t('programs.program_name')}</TableHead>
                       <TableHead className="w-1/12">{t('programs.budget_rm')}</TableHead>
-                      <TableHead className="w-1/6">{t('programs.recipient_name')}</TableHead>
+                      <TableHead className="w-1/8">{t('programs.recipient_name')}</TableHead>
+                      <TableHead className="w-1/8">{t('programs.exco_letter_ref')}</TableHead>
                       <TableHead className="w-1/8">{t('programs.status')}</TableHead>
                       <TableHead className="w-1/8">{t('status.voucher_no')}</TableHead>
                       <TableHead className="w-1/8">{t('status.eft_no')}</TableHead>
@@ -2028,6 +2029,7 @@ export default function ProgramManagement() {
                           </TableCell>
                           <TableCell>{program.budget}</TableCell>
                           <TableCell>{program.recipient_name || program.recipientName}</TableCell>
+                          <TableCell className="text-xs">{program.exco_letter_ref || program.excoLetterRef || '-'}</TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(program.status || '')}>
                               {t(getStatusLabel(program.status || ''))}
