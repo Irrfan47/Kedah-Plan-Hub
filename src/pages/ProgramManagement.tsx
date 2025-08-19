@@ -47,7 +47,7 @@ interface Program {
   budget: number;
   recipientName: string;
   excoLetterRef: string;
-  status: 'draft' | 'under_review' | 'query' | 'query_answered' | 'complete_can_send_to_mmk' | 'under_review_by_mmk' | 'document_accepted_by_mmk' | 'payment_in_progress' | 'payment_completed' | 'rejected';
+      status: 'draft' | 'under_review' | 'query' | 'query_answered' | 'complete_can_send_to_mmk' | 'document_accepted_by_mmk' | 'payment_in_progress' | 'payment_completed' | 'rejected';
   createdBy: string;
   createdAt: string;
   documents: Document[];
@@ -99,7 +99,7 @@ const getStatusColor = (status: string) => {
     query: 'bg-orange-100 text-orange-800',
     query_answered: 'bg-purple-100 text-purple-800',
     complete_can_send_to_mmk: 'bg-yellow-100 text-yellow-800',
-    under_review_by_mmk: 'bg-indigo-100 text-indigo-800',
+    
     document_accepted_by_mmk: 'bg-green-100 text-green-800',
     payment_in_progress: 'bg-teal-100 text-teal-800',
     payment_completed: 'bg-green-100 text-green-800',
@@ -115,7 +115,7 @@ const getStatusLabel = (status: string) => {
     query: 'status.query',
     query_answered: 'status.query_answered',
     complete_can_send_to_mmk: 'status.complete_can_send_to_mmk',
-    under_review_by_mmk: 'status.under_review_by_mmk',
+    
     document_accepted_by_mmk: 'status.document_accepted_by_mmk',
     payment_in_progress: 'status.payment_in_progress',
     payment_completed: 'status.payment_completed',
@@ -204,8 +204,7 @@ export default function ProgramManagement() {
   // Confirmation modal states for status changes
   const [programToSubmit, setProgramToSubmit] = useState<any>(null);
   const [isSubmitConfirmModalOpen, setIsSubmitConfirmModalOpen] = useState(false);
-  const [programToSubmitToMMK, setProgramToSubmitToMMK] = useState<any>(null);
-  const [isSubmitToMMKModalOpen, setIsSubmitToMMKModalOpen] = useState(false);
+
   const [programToApproveByMMK, setProgramToApproveByMMK] = useState<any>(null);
   const [isApproveByMMKModalOpen, setIsApproveByMMKModalOpen] = useState(false);
   const [programToStartPayment, setProgramToStartPayment] = useState<any>(null);
@@ -772,26 +771,7 @@ export default function ProgramManagement() {
     }
   };
 
-  const handleSubmitToMMK = async (programId: string) => {
-    const res = await changeProgramStatus(programId, 'under_review_by_mmk');
-    if (res.success) {
-      toast({ title: t('common.success'), description: 'Program submitted to MMK office for review' });
-      // Refresh programs
-      if (user?.role === 'exco_user') {
-        fetchProgramsForUser(user.id);
-      } else if (selectedExcoUser) {
-        fetchProgramsForUser(selectedExcoUser.id);
-      } else {
-        getPrograms().then(res => {
-          if (res.success && res.programs) setPrograms(res.programs);
-        });
-      }
-      setIsSubmitToMMKModalOpen(false);
-      setProgramToSubmitToMMK(null);
-    } else {
-      toast({ title: "Error", description: res.message || "Failed to submit program to MMK", variant: "destructive" });
-    }
-  };
+
 
   const handleApproveByMMK = async (programId: string) => {
     const res = await changeProgramStatus(programId, 'document_accepted_by_mmk');
@@ -1196,7 +1176,7 @@ export default function ProgramManagement() {
       { key: 'query', label: t('timeline.query'), icon: AlertCircle, color: 'bg-orange-500' },
       { key: 'query_answered', label: t('timeline.query_answered'), icon: CheckCircle, color: 'bg-purple-500' },
       { key: 'complete_can_send_to_mmk', label: t('timeline.complete_can_send_to_mmk'), icon: Send, color: 'bg-yellow-500' },
-      { key: 'under_review_by_mmk', label: t('timeline.under_review_by_mmk'), icon: Clock, color: 'bg-indigo-500' },
+
       { key: 'document_accepted_by_mmk', label: t('timeline.document_accepted_by_mmk'), icon: CheckCircle, color: 'bg-teal-500' },
       { key: 'payment_in_progress', label: t('timeline.payment_in_progress'), icon: Clock, color: 'bg-amber-500' },
       { key: 'payment_completed', label: t('timeline.payment_completed'), icon: CheckCircle, color: 'bg-green-500' }
@@ -1232,10 +1212,10 @@ export default function ProgramManagement() {
       // use the timestamp of the next completed status
       if (statusKey === 'query' || statusKey === 'query_answered') {
         const currentStatus = program.status;
-        if (['complete_can_send_to_mmk', 'under_review_by_mmk', 'document_accepted_by_mmk', 'payment_in_progress', 'payment_completed'].includes(currentStatus)) {
+        if (['complete_can_send_to_mmk', 'document_accepted_by_mmk', 'payment_in_progress', 'payment_completed'].includes(currentStatus)) {
           // Find the timestamp of the next status that exists in history
           const nextStatusEntry = program.status_history.find((entry: any) => 
-            ['complete_can_send_to_mmk', 'under_review_by_mmk', 'document_accepted_by_mmk', 'payment_in_progress', 'payment_completed'].includes(entry.status)
+            ['complete_can_send_to_mmk', 'document_accepted_by_mmk', 'payment_in_progress', 'payment_completed'].includes(entry.status)
           );
           if (nextStatusEntry) {
             return new Date(nextStatusEntry.changed_at);
@@ -1258,7 +1238,7 @@ export default function ProgramManagement() {
       
       // If program is at complete_can_send_to_mmk or beyond, consider query and query_answered as completed
       if (statusKey === 'query' || statusKey === 'query_answered') {
-        if (['complete_can_send_to_mmk', 'under_review_by_mmk', 'document_accepted_by_mmk', 'payment_in_progress', 'payment_completed'].includes(currentStatus)) {
+        if (['complete_can_send_to_mmk', 'document_accepted_by_mmk', 'payment_in_progress', 'payment_completed'].includes(currentStatus)) {
           return true;
         }
       }
@@ -2046,7 +2026,6 @@ export default function ProgramManagement() {
                         <SelectItem value="query">{t('status.query')}</SelectItem>
                         <SelectItem value="query_answered">{t('status.query_answered')}</SelectItem>
                         <SelectItem value="complete_can_send_to_mmk">{t('status.complete_can_send_to_mmk')}</SelectItem>
-                        <SelectItem value="under_review_by_mmk">{t('status.under_review_by_mmk')}</SelectItem>
                         <SelectItem value="document_accepted_by_mmk">{t('status.document_accepted_by_mmk')}</SelectItem>
                         <SelectItem value="payment_in_progress">{t('status.payment_in_progress')}</SelectItem>
                         <SelectItem value="payment_completed">{t('status.payment_completed')}</SelectItem>
@@ -2060,7 +2039,6 @@ export default function ProgramManagement() {
                         <SelectItem value="query">{t('status.query')}</SelectItem>
                         <SelectItem value="query_answered">{t('status.query_answered')}</SelectItem>
                         <SelectItem value="complete_can_send_to_mmk">{t('status.complete_can_send_to_mmk')}</SelectItem>
-                        <SelectItem value="under_review_by_mmk">{t('status.under_review_by_mmk')}</SelectItem>
                         <SelectItem value="document_accepted_by_mmk">{t('status.document_accepted_by_mmk')}</SelectItem>
                         <SelectItem value="payment_in_progress">{t('status.payment_in_progress')}</SelectItem>
                         <SelectItem value="payment_completed">{t('status.payment_completed')}</SelectItem>
@@ -2487,68 +2465,6 @@ export default function ProgramManagement() {
                                         variant="outline" 
                                         size="sm"
                                         onClick={() => {
-                                          setProgramToSubmitToMMK(program);
-                                          setIsSubmitToMMKModalOpen(true);
-                                        }}
-                                      >
-                                        <Send className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Submit to MMK office</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </>
-                            )}
-                            {user?.role === 'finance_mmk' && (program.status === 'under_review_by_mmk') && (
-                              <>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => {
-                                          setSelectedProgram(program);
-                                          setActiveDocumentTab('original');
-                                          setIsDocumentsModalOpen(true);
-                                        }}
-                                      >
-                                        <Eye className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>View program documents</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => {
-                                          setSelectedProgram(program);
-                                          setIsDetailsModalOpen(true);
-                                        }}
-                                      >
-                                        <MessageSquare className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>View remarks and program details</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => {
                                           setProgramToApproveByMMK(program);
                                           setIsApproveByMMKModalOpen(true);
                                         }}
@@ -2557,31 +2473,13 @@ export default function ProgramManagement() {
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p>Accept document</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => {
-                                          setProgramToReject(program);
-                                          setIsRejectConfirmModalOpen(true);
-                                        }}
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Reject program</p>
+                                                                              <p>Accept document (skip MMK review)</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
                               </>
                             )}
+                                  
                             {user?.role === 'finance_mmk' && (program.status === 'document_accepted_by_mmk') && (
                               <>
                                 <TooltipProvider>
@@ -3964,34 +3862,7 @@ export default function ProgramManagement() {
 
 
 
-      {/* Submit to MMK Confirmation Modal */}
-      <Dialog open={isSubmitToMMKModalOpen} onOpenChange={setIsSubmitToMMKModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Submit to MMK Office</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p>Are you sure you want to submit the program "{programToSubmitToMMK?.program_name || programToSubmitToMMK?.programName}" to MMK office for review?</p>
-            <p className="text-sm text-muted-foreground">This will change the program status to "Under Review by MMK office".</p>
-            <div className="flex justify-end gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setIsSubmitToMMKModalOpen(false);
-                  setProgramToSubmitToMMK(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => handleSubmitToMMK(programToSubmitToMMK.id)}
-              >
-                Submit to MMK
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Approve by MMK Confirmation Modal */}
       <Dialog open={isApproveByMMKModalOpen} onOpenChange={setIsApproveByMMKModalOpen}>
@@ -4001,7 +3872,7 @@ export default function ProgramManagement() {
           </DialogHeader>
           <div className="space-y-4">
             <p>Are you sure you want to accept the document for program "{programToApproveByMMK?.program_name || programToApproveByMMK?.programName}"?</p>
-            <p className="text-sm text-muted-foreground">This will change the program status to "Document Accepted by MMK Office".</p>
+            <p className="text-sm text-muted-foreground">This will skip the MMK review process and change the program status directly to "Document Accepted by MMK Office".</p>
             <div className="flex justify-end gap-2">
               <Button 
                 variant="outline" 
@@ -4012,11 +3883,11 @@ export default function ProgramManagement() {
               >
                 Cancel
               </Button>
-              <Button 
-                onClick={() => handleApproveByMMK(programToApproveByMMK.id)}
-              >
-                Accept Document
-              </Button>
+                              <Button 
+                  onClick={() => handleApproveByMMK(programToApproveByMMK.id)}
+                >
+                  Accept Document (Skip MMK Review)
+                </Button>
             </div>
           </div>
         </DialogContent>
