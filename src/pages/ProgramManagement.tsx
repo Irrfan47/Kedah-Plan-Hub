@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Eye, Edit, Trash, Send, FileText, MessageSquare, Upload, Check, X, Download, HelpCircle, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, History, Wallet } from 'lucide-react';
+import { Plus, Eye, Edit, Trash, Send, FileText, MessageSquare, Upload, Check, X, Download, HelpCircle, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, History, Wallet, Info, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   getPrograms,
@@ -22,8 +22,7 @@ import {
   downloadDocument,
   viewDocument,
   changeProgramStatus,
-  addRemark,
-  getRemarks,
+
   deleteProgram,
   deleteDocument,
   createQuery,
@@ -55,13 +54,7 @@ interface Program {
   voucherNumber?: string;
   eftNumber?: string;
   eftDate?: string;
-  remarks: Array<{
-    id: string;
-    message: string;
-    createdBy: string;
-    createdAt: string;
-    role: string;
-  }>;
+
 }
 
 // Mock data
@@ -85,10 +78,7 @@ const mockPrograms: Program[] = [
     voucherNumber: 'V2024001',
     eftNumber: 'EFT2024001',
     eftDate: '2024-01-20',
-    remarks: [
-      { id: '1', message: 'Initial submission', createdBy: 'Siti binti Rahman', createdAt: '2024-01-15', role: 'exco_user' },
-      { id: '2', message: 'Approved for implementation', createdBy: 'Fatimah binti Omar', createdAt: '2024-01-20', role: 'finance' }
-    ]
+
   }
 ];
 
@@ -106,6 +96,21 @@ const getStatusColor = (status: string) => {
     rejected: 'bg-red-100 text-red-800',
   };
   return colors[status as keyof typeof colors] || colors.draft;
+};
+
+const getStatusRowColor = (status: string) => {
+  const rowColors = {
+    draft: 'bg-gray-50',
+    under_review: 'bg-blue-50',
+    query: 'bg-orange-50',
+    query_answered: 'bg-purple-50',
+    complete_can_send_to_mmk: 'bg-yellow-50',
+    document_accepted_by_mmk: 'bg-teal-50',
+    payment_in_progress: 'bg-amber-50',
+    payment_completed: 'bg-green-50',
+    rejected: 'bg-red-50',
+  };
+  return rowColors[status as keyof typeof rowColors] || 'bg-gray-50';
 };
 
 const getStatusLabel = (status: string) => {
@@ -195,7 +200,7 @@ export default function ProgramManagement() {
     penyataAkaunBank: null as File | any | null,
     borangDaftarKod: null as File | any | null
   });
-  const [newRemark, setNewRemark] = useState('');
+
   const [newDocument, setNewDocument] = useState<File | null>(null);
 
   const [programToDelete, setProgramToDelete] = useState<any>(null);
@@ -437,18 +442,7 @@ export default function ProgramManagement() {
     setCurrentPage(1);
   }, [statusFilter]);
 
-  // Update budget validation when form data changes
-  useEffect(() => {
-    if (user?.role === 'exco_user' && formData.budget && userBudgetInfo?.remaining_budget) {
-      const programBudget = parseFloat(formData.budget);
-      const remainingBudget = userBudgetInfo.remaining_budget;
-      
-      if (programBudget > remainingBudget) {
-        // Budget exceeds remaining budget - this will show the warning in the UI
-        console.log('Budget validation: Program budget exceeds remaining budget');
-      }
-    }
-  }, [formData.budget, userBudgetInfo, user?.role]);
+  // Budget is only validated when program reaches Document Accepted status
 
   const handleAddProgram = async () => {
     // Check if all required fields are filled
@@ -461,31 +455,7 @@ export default function ProgramManagement() {
       return;
     }
 
-    // Budget validation for EXCO users
-    if (user?.role === 'exco_user') {
-      try {
-        const budgetResponse = await getUserBudget(user.id);
-        if (budgetResponse.success) {
-          const { remaining_budget } = budgetResponse.user;
-          const programBudget = parseFloat(formData.budget);
-          
-          if (programBudget > remaining_budget) {
-            const programBudgetFormatted = programBudget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            const remainingBudgetFormatted = remaining_budget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            const errorMessage = `${t('budget.insufficient')}. ${t('budget.exceeds_remaining')} (RM ${programBudgetFormatted}) (RM ${remainingBudgetFormatted}).`;
-            toast({
-              title: t('common.error'),
-              description: errorMessage,
-              variant: "destructive"
-            });
-            return;
-          }
-        }
-      } catch (error) {
-        console.error('Error checking budget:', error);
-        // Continue with program creation if budget check fails
-      }
-    }
+    // Budget validation is now done when program reaches Document Accepted status
 
     // Validate custom documents if any exist
     const invalidCustomDocs = customDocuments.filter(doc => 
@@ -858,7 +828,7 @@ export default function ProgramManagement() {
   };
 
   const handleQuery = async (programId: string, query: string) => {
-    const res = await addRemark(programId, query);
+    const res = await createQuery(programId, query, user?.fullName || user?.full_name || '', user?.role || '');
     if (res.success) {
       toast({ title: t('programs.query_sent'), description: t('programs.query_sent_desc') });
       // Refresh programs - use user-specific fetch for exco_user
@@ -1145,6 +1115,13 @@ export default function ProgramManagement() {
     setIsEftDetailsModalOpen(true);
   };
 
+  // Helper function to open documents modal
+  const openDocumentsModal = (program: any) => {
+    setSelectedProgram(program);
+    setActiveDocumentTab('original');
+    setIsDocumentsModalOpen(true);
+  };
+
   // Helper function to get payment completion timestamp
   const getPaymentCompletionTimestamp = (program: any) => {
     if (!program.status_history || !Array.isArray(program.status_history)) {
@@ -1311,13 +1288,16 @@ export default function ProgramManagement() {
                               className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${
                                 isCompleted ? status.color : 'bg-gray-300'
                               } ${isCurrent ? 'ring-4 ring-blue-200' : ''} ${
-                                (status.key === 'query' || status.key === 'query_answered') && isCompleted && user?.role === 'finance_mmk'
+                                ((status.key === 'query' || status.key === 'query_answered') && isCompleted && user?.role === 'finance_mmk') ||
+                                (status.key === 'under_review' && isCompleted)
                                   ? 'cursor-pointer hover:scale-110 transition-transform'
                                   : ''
                               }`}
                               onClick={() => {
                                 if ((status.key === 'query' || status.key === 'query_answered') && isCompleted && user?.role === 'finance_mmk') {
                                   openQueryDetailsModal(program);
+                                } else if (status.key === 'under_review' && isCompleted) {
+                                  openDocumentsModal(program);
                                 }
                               }}
                             >
@@ -1327,6 +1307,10 @@ export default function ProgramManagement() {
                           {(status.key === 'query' || status.key === 'query_answered') && isCompleted && user?.role === 'finance_mmk' ? (
                             <TooltipContent>
                               <p>Click to view query details</p>
+                            </TooltipContent>
+                          ) : (status.key === 'under_review' && isCompleted) ? (
+                            <TooltipContent>
+                              <p>Click to view available documents</p>
                             </TooltipContent>
                           ) : null}
                         </Tooltip>
@@ -1486,6 +1470,14 @@ export default function ProgramManagement() {
                         </span>
                       </div>
                     </div>
+                    <div className="mt-2 text-xs text-blue-700">
+                      <Info className="h-3 w-3 inline mr-1" />
+                      Budget is only deducted when programs reach "Document Accepted" status
+                    </div>
+                    <div className="mt-2 text-xs text-blue-700">
+                      <Info className="h-3 w-3 inline mr-1" />
+                      Budget is only deducted when programs reach "Document Accepted" status
+                    </div>
                   </div>
                 )}
                 
@@ -1498,23 +1490,14 @@ export default function ProgramManagement() {
                     onChange={(e) => setFormData({...formData, budget: e.target.value})}
                     placeholder={t('programs.enter_budget_amount')}
                   />
-                  {/* Budget Warning for EXCO Users */}
-                  {user?.role === 'exco_user' && formData.budget && userBudgetInfo?.remaining_budget && (
-                    parseFloat(formData.budget) > userBudgetInfo.remaining_budget ? (
-                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                        <div className="flex items-center gap-2">
-                          <AlertCircle className="h-4 w-4" />
-                          <span>{t('budget.exceeds_remaining')}: RM {(parseFloat(formData.budget) - userBudgetInfo.remaining_budget).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
+                  {/* Budget Information for EXCO Users */}
+                  {user?.role === 'exco_user' && formData.budget && (
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                      <div className="flex items-center gap-2">
+                        <Info className="h-4 w-4" />
+                        <span>Budget will be deducted when program reaches "Document Accepted" status</span>
                       </div>
-                    ) : (
-                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4" />
-                          <span>{t('budget.available')}: RM {(userBudgetInfo.remaining_budget - parseFloat(formData.budget)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {t('budget.remaining_after_program')}</span>
-                        </div>
-                      </div>
-                    )
+                    </div>
                   )}
                 </div>
                 
@@ -2068,7 +2051,7 @@ export default function ProgramManagement() {
                   <TableBody>
                     {currentPrograms.map((program, index) => (
                       <>
-                        <TableRow key={program.id} className="bg-gray-50">
+                        <TableRow key={program.id} className={getStatusRowColor(program.status || '')}>
                           <TableCell className="text-center font-medium">
                             {indexOfFirstProgram + index + 1}
                           </TableCell>
@@ -2113,51 +2096,9 @@ export default function ProgramManagement() {
                           </TableCell>
                           <TableCell>
                           <div className="flex gap-2">
-                            {/* EXCO user: always show remarks/details button */}
-                            {user?.role === 'exco_user' && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        setSelectedProgram(program);
-                                        setIsDetailsModalOpen(true);
-                                      }}
-                                    >
-                                      <MessageSquare className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>View remarks and program details</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
+
                             
-                            {/* Super Admin and Finance Officer: only show remarks/details button, no other actions */}
-                            {(user?.role === 'super_admin' || user?.role === 'finance_officer') && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        setSelectedProgram(program);
-                                        setIsDetailsModalOpen(true);
-                                      }}
-                                    >
-                                      <MessageSquare className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>View remarks and program details</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
+
                             
                             {/* Finance MMK Role Actions - Keep existing functionality */}
                             {user?.role === 'finance_mmk' && (program.status === 'query') && (
@@ -2179,25 +2120,6 @@ export default function ProgramManagement() {
                                     </TooltipTrigger>
                                     <TooltipContent>
                                       <p>View program documents</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => {
-                                          setSelectedProgram(program);
-                                          setIsDetailsModalOpen(true);
-                                        }}
-                                      >
-                                        <MessageSquare className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>View remarks and program details</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
@@ -2266,25 +2188,6 @@ export default function ProgramManagement() {
                                         size="sm"
                                         onClick={() => {
                                           setSelectedProgram(program);
-                                          setIsDetailsModalOpen(true);
-                                        }}
-                                      >
-                                        <MessageSquare className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>View remarks and program details</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => {
-                                          setSelectedProgram(program);
                                           setIsQueryModalOpen(true);
                                         }}
                                       >
@@ -2336,25 +2239,6 @@ export default function ProgramManagement() {
                                     </TooltipTrigger>
                                     <TooltipContent>
                                       <p>View program documents</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => {
-                                          setSelectedProgram(program);
-                                          setIsDetailsModalOpen(true);
-                                        }}
-                                      >
-                                        <MessageSquare className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>View remarks and program details</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
@@ -2446,25 +2330,6 @@ export default function ProgramManagement() {
                                         variant="outline" 
                                         size="sm"
                                         onClick={() => {
-                                          setSelectedProgram(program);
-                                          setIsDetailsModalOpen(true);
-                                        }}
-                                      >
-                                        <MessageSquare className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>View remarks and program details</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => {
                                           setProgramToApproveByMMK(program);
                                           setIsApproveByMMKModalOpen(true);
                                         }}
@@ -2509,25 +2374,6 @@ export default function ProgramManagement() {
                                         variant="outline" 
                                         size="sm"
                                         onClick={() => {
-                                          setSelectedProgram(program);
-                                          setIsDetailsModalOpen(true);
-                                        }}
-                                      >
-                                        <MessageSquare className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>View remarks and program details</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => {
                                           setProgramToStartPayment(program);
                                           setIsStartPaymentModalOpen(true);
                                         }}
@@ -2561,25 +2407,6 @@ export default function ProgramManagement() {
                                     </TooltipTrigger>
                                     <TooltipContent>
                                       <p>View program documents</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => {
-                                          setSelectedProgram(program);
-                                          setIsDetailsModalOpen(true);
-                                        }}
-                                      >
-                                        <MessageSquare className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>View remarks and program details</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
@@ -2648,25 +2475,6 @@ export default function ProgramManagement() {
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => {
-                                          setSelectedProgram(program);
-                                          setIsDetailsModalOpen(true);
-                                        }}
-                                      >
-                                        <MessageSquare className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>View remarks and program details</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
                               </>
                             )}
                             {canCreateProgram && (program.status || program.status) === 'draft' && (
@@ -2848,10 +2656,10 @@ export default function ProgramManagement() {
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  Original Documents
+                  Documents
                   {selectedProgram?.documents && (
                     <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
-                      {selectedProgram.documents.filter((doc: any) => doc.document_type === 'original' || !doc.document_type).length}
+                      {selectedProgram.documents.length}
                     </span>
                   )}
                 </button>
@@ -2859,115 +2667,371 @@ export default function ProgramManagement() {
               </div>
             </div>
 
-            {/* Original Documents Tab */}
+                        {/* Original Documents Tab */}
             {activeDocumentTab === 'original' && (
             <div>
-                {selectedProgram?.documents && selectedProgram.documents.filter((doc: any) => doc.document_type === 'original' || !doc.document_type).length > 0 ? (
-                  selectedProgram.documents
-                    .filter((doc: any) => doc.document_type === 'original' || !doc.document_type)
-                    .map((doc: any) => {
-                      const isImage = doc.original_name && /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(doc.original_name);
+                {/* Predefined Documents Section */}
+                <div className="mb-6">
+                  <h4 className="font-medium mb-3 text-gray-700">Predefined Documents</h4>
+                  <div className="space-y-2">
+                    {[
+                      { name: 'Surat Akuan Pusat Khidmat', type: 'surat_akuan' },
+                      { name: 'Surat Kelulusan Pkn', type: 'surat_kelulusan' },
+                      { name: 'Surat Program', type: 'surat_program' },
+                      { name: 'Surat Exco', type: 'surat_exco' },
+                      { name: 'Penyata Akaun Bank', type: 'penyata_akuan' },
+                      { name: 'Borang Daftar Kod', type: 'borang_daftar' }
+                    ].map((docType) => {
+                      // Check if this document type exists in the program
+                      const existingDoc = selectedProgram?.documents?.find((doc: any) => 
+                        doc.document_type === docType.type || 
+                        (doc.original_name && doc.original_name.includes(docType.name))
+                      );
                       
                       return (
-                        <div key={doc.id} className="flex items-center gap-2 p-2 border rounded mb-2">
-                    <FileText className="h-4 w-4" />
-                          <div className="flex-1">
-                            <span className="font-medium">{doc.original_name}</span>
-                            {doc.uploaded_by && (
-                              <p className="text-xs text-gray-500">Uploaded by: {doc.uploaded_by}</p>
-                            )}
+                        <div key={docType.type} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-4 w-4 text-gray-600" />
+                            <span className="font-medium text-gray-700">{docType.name}</span>
                           </div>
-                          <div className="flex gap-1">
-                            {isImage && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm" 
-                                      onClick={async () => {
-                                        try {
-                                          const result = await viewDocument(doc.id, doc.original_name);
-                                          toast({
-                                            title: "Success",
-                                            description: "Image opened in new tab",
-                                          });
-                                        } catch (error) {
-                                          console.error('View error:', error);
-                                          toast({
-                                            title: "Error",
-                                            description: "Failed to view image. Please try again.",
-                                            variant: "destructive",
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>View image in new tab</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                          <div className="flex items-center gap-2">
+                            {existingDoc ? (
+                              <>
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                <span className="text-sm text-green-600 font-medium">Available</span>
+                                {/* Document Actions */}
+                                <div className="flex gap-1 ml-2">
+                                  {existingDoc.original_name && /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(existingDoc.original_name) && (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            onClick={async () => {
+                                              try {
+                                                await viewDocument(existingDoc.id, existingDoc.original_name);
+                                                toast({
+                                                  title: "Success",
+                                                  description: "Image opened in new tab",
+                                                });
+                                              } catch (error) {
+                                                console.error('View error:', error);
+                                                toast({
+                                                  title: "Error",
+                                                  description: "Failed to view image. Please try again.",
+                                                  variant: "destructive",
+                                                });
+                                              }
+                                            }}
+                                          >
+                                            <Eye className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>View image in new tab</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm"
+                                          onClick={async () => {
+                                            try {
+                                              await downloadDocument(existingDoc.id, existingDoc.original_name);
+                                              toast({
+                                                title: "Success",
+                                                description: "Document downloaded successfully",
+                                              });
+                                            } catch (error) {
+                                              console.error('Download error:', error);
+                                              toast({
+                                                title: "Error",
+                                                description: "Failed to download document. Please try again.",
+                                                variant: "destructive",
+                                              });
+                                            }
+                                          }}
+                                        >
+                                          <Download className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Download document</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm"
+                                          onClick={() => {
+                                            setSelectedDocumentForHistory(existingDoc);
+                                            setIsDocumentHistoryModalOpen(true);
+                                          }}
+                                        >
+                                          <History className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>View document history</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-5 w-5 text-red-600" />
+                                <span className="text-sm text-red-600 font-medium">Not Available</span>
+                              </>
                             )}
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={async () => {
-                                      try {
-                                        await downloadDocument(doc.id, doc.original_name);
-                                        toast({
-                                          title: "Success",
-                                          description: "Document downloaded successfully",
-                                        });
-                                      } catch (error) {
-                                        console.error('Download error:', error);
-                                        toast({
-                                          title: "Error",
-                                          description: "Failed to download document. Please try again.",
-                                          variant: "destructive",
-                                        });
-                                      }
-                                    }}
-                                  >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Download document</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedDocumentForHistory(doc);
-                                      setIsDocumentHistoryModalOpen(true);
-                                    }}
-                                  >
-                                    <History className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>View document history</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
                           </div>
                         </div>
                       );
-                    })
-              ) : (
-                  <p className="text-muted-foreground">No original documents uploaded yet.</p>
-              )}
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Documents Section */}
+                {selectedProgram?.documents && selectedProgram.documents.filter((doc: any) => 
+                  doc.document_type === 'custom' && 
+                  !['surat_akuan', 'surat_kelulusan', 'surat_program', 'surat_exco', 'penyata_akuan', 'borang_daftar'].includes(doc.document_type)
+                ).length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-medium mb-3 text-gray-700">Custom Documents</h4>
+                    <div className="space-y-2">
+                      {selectedProgram.documents
+                        .filter((doc: any) => 
+                          doc.document_type === 'custom' && 
+                          !['surat_akuan', 'surat_kelulusan', 'surat_program', 'surat_exco', 'penyata_akuan', 'borang_daftar'].includes(doc.document_type)
+                        )
+                        .map((doc: any) => {
+                          const isImage = doc.original_name && /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(doc.original_name);
+                          
+                          return (
+                            <div key={doc.id} className="flex items-center gap-2 p-2 border rounded mb-2">
+                              <FileText className="h-4 w-4" />
+                              <div className="flex-1">
+                                <span className="font-medium">{doc.original_name}</span>
+                                {doc.uploaded_by && (
+                                  <p className="text-xs text-gray-500">Uploaded by: {doc.uploaded_by}</p>
+                                )}
+                              </div>
+                              <div className="flex gap-1">
+                                {isImage && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          onClick={async () => {
+                                            try {
+                                              const result = await viewDocument(doc.id, doc.original_name);
+                                              toast({
+                                                title: "Success",
+                                                description: "Image opened in new tab",
+                                              });
+                                            } catch (error) {
+                                              console.error('View error:', error);
+                                              toast({
+                                                title: "Error",
+                                                description: "Failed to view image. Please try again.",
+                                                variant: "destructive",
+                                              });
+                                            }
+                                          }}
+                                        >
+                                          <Eye className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>View image in new tab</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={async () => {
+                                          try {
+                                            await downloadDocument(doc.id, doc.original_name);
+                                            toast({
+                                              title: "Success",
+                                              description: "Document downloaded successfully",
+                                            });
+                                          } catch (error) {
+                                            console.error('Download error:', error);
+                                            toast({
+                                              title: "Error",
+                                              description: "Failed to download document. Please try again.",
+                                              variant: "destructive",
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        <Download className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Download document</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedDocumentForHistory(doc);
+                                          setIsDocumentHistoryModalOpen(true);
+                                        }}
+                                      >
+                                        <History className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>View document history</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Legacy Documents (if any exist) */}
+                {selectedProgram?.documents && selectedProgram.documents.filter((doc: any) => 
+                  (doc.document_type === 'original' || !doc.document_type) && 
+                  !['surat_akuan', 'surat_kelulusan', 'surat_program', 'surat_exco', 'penyata_akuan', 'borang_daftar'].includes(doc.document_type)
+                ).length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-3 text-gray-700">Other Documents</h4>
+                    <div className="space-y-2">
+                      {selectedProgram.documents
+                        .filter((doc: any) => 
+                          (doc.document_type === 'original' || !doc.document_type) && 
+                          !['surat_akuan', 'surat_kelulusan', 'surat_program', 'surat_exco', 'penyata_akuan', 'borang_daftar'].includes(doc.document_type)
+                        )
+                        .map((doc: any) => {
+                          const isImage = doc.original_name && /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(doc.original_name);
+                          
+                          return (
+                            <div key={doc.id} className="flex items-center gap-2 p-2 border rounded mb-2">
+                              <FileText className="h-4 w-4" />
+                              <div className="flex-1">
+                                <span className="font-medium">{doc.original_name}</span>
+                                {doc.uploaded_by && (
+                                  <p className="text-xs text-gray-500">Uploaded by: {doc.uploaded_by}</p>
+                                )}
+                              </div>
+                              <div className="flex gap-1">
+                                {isImage && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          onClick={async () => {
+                                            try {
+                                              const result = await viewDocument(doc.id, doc.original_name);
+                                              toast({
+                                                title: "Success",
+                                                description: "Image opened in new tab",
+                                              });
+                                            } catch (error) {
+                                              console.error('View error:', error);
+                                              toast({
+                                                title: "Error",
+                                                description: "Failed to view image. Please try again.",
+                                                variant: "destructive",
+                                              });
+                                            }
+                                          }}
+                                        >
+                                          <Eye className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>View image in new tab</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={async () => {
+                                          try {
+                                            await downloadDocument(doc.id, doc.original_name);
+                                            toast({
+                                              title: "Success",
+                                              description: "Document downloaded successfully",
+                                            });
+                                          } catch (error) {
+                                            console.error('Download error:', error);
+                                            toast({
+                                              title: "Error",
+                                              description: "Failed to download document. Please try again.",
+                                              variant: "destructive",
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        <Download className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Download document</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedDocumentForHistory(doc);
+                                          setIsDocumentHistoryModalOpen(true);
+                                        }}
+                                      >
+                                        <History className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>View document history</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              </div>
+                            );
+                          })}
+                    </div>
+                  </div>
+                )}
             </div>
             )}
 
@@ -3021,77 +3085,7 @@ export default function ProgramManagement() {
               </div>
             </div>
 
-            <div>
-              <Label>Remarks</Label>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {selectedProgram?.remarks?.map((remark: any) => (
-                  <div key={remark.id} className="p-2 border rounded bg-muted">
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-blue-600">{remark.created_by || remark.createdBy}</span>
-                    </div>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(remark.created_at || remark.createdAt).toLocaleDateString()} at {new Date(remark.created_at || remark.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                      </span>
-                    </div>
-                    <p className="text-sm">{remark.remark || remark.message}</p>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-4">
-                <Textarea
-                  placeholder="Add a remark..."
-                  value={newRemark}
-                  onChange={(e) => setNewRemark(e.target.value)}
-                />
-                                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          className="mt-2" 
-                          onClick={async () => {
-                            if (newRemark.trim() && selectedProgram) {
-                              const res = await addRemark(selectedProgram.id, newRemark, user?.fullName || user?.full_name || '', user?.role || '');
-                              if (res.success) {
-                                toast({ title: "Success", description: "Remark added" });
-                                  // Refresh programs - use user-specific fetch for exco_user
-                                  if (user?.role === 'exco_user') {
-                                    fetchProgramsForUser(user.id);
-                                  } else if (selectedExcoUser) {
-                                    fetchProgramsForUser(selectedExcoUser.id);
-                                  } else {
-                                getPrograms().then(res => {
-                                  if (res.success && res.programs) setPrograms(res.programs);
-                                });
-                                  }
-                                setNewRemark('');
-                                setSelectedProgram({
-                                  ...selectedProgram,
-                                  remarks: [...selectedProgram.remarks, {
-                                    id: Date.now().toString(),
-                                    message: newRemark,
-                                    createdBy: user?.fullName || '',
-                                    createdAt: new Date().toISOString().split('T')[0],
-                                    role: user?.role || ''
-                                  }]
-                                });
-                              } else {
-                                toast({ title: "Error", description: res.message || "Failed to add remark", variant: "destructive" });
-                              }
-                            }
-                          }}
-                        >
-                          Add Remark
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Add a new remark to the program</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-              </div>
-            </div>
+
           </div>
         </DialogContent>
       </Dialog>
@@ -3762,7 +3756,7 @@ export default function ProgramManagement() {
             <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
               <li>The program and all its data</li>
               <li>All associated documents and files</li>
-              <li>All remarks and queries</li>
+                                  <li>All queries</li>
             </ul>
             <p className="text-sm text-red-600 font-medium">This action cannot be undone.</p>
             <div className="flex justify-end gap-2">
@@ -4472,31 +4466,7 @@ export default function ProgramManagement() {
               </div>
             </div>
 
-            {/* Remarks Section */}
-            <div>
-              <Label className="text-base font-semibold">Remarks</Label>
-              <div className="space-y-2">
-                {selectedProgram?.remarks && selectedProgram.remarks.length > 0 ? (
-                  <div className="border rounded p-2 space-y-1 max-h-32 overflow-y-auto">
-                    {selectedProgram.remarks.map((remark: any) => (
-                      <div key={remark.id} className="p-2 border rounded bg-muted">
-                        <div className="flex justify-between items-center mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm text-blue-600">{remark.created_by || remark.createdBy}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(remark.created_at || remark.createdAt).toLocaleDateString()} at {new Date(remark.created_at || remark.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                          </span>
-                        </div>
-                        <p className="text-sm">{remark.remark || remark.message}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No remarks yet.</p>
-                )}
-              </div>
-            </div>
+
 
             <div className="flex justify-end pt-4 border-t">
               <TooltipProvider>

@@ -106,51 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
-    // Budget validation for EXCO users
-    if ($created_by) {
-        // Check if user is an EXCO user
-        $user_check = $conn->prepare('SELECT role, total_budget FROM users WHERE id = ?');
-        $user_check->bind_param('i', $created_by);
-        $user_check->execute();
-        $user_result = $user_check->get_result();
-        
-        if ($user_result->num_rows > 0) {
-            $user_data = $user_result->fetch_assoc();
-            
-            if ($user_data['role'] === 'exco_user') {
-                // Calculate remaining budget for EXCO user
-                $total_budget = floatval($user_data['total_budget']);
-                $program_budget = floatval($budget);
-                
-                // Get allocated programs budget (complete_can_send_to_mmk status and beyond, excluding rejected)
-                $allocated_budget_stmt = $conn->prepare('SELECT SUM(budget) as allocated_budget FROM programs WHERE created_by = ? AND status IN ("complete_can_send_to_mmk", "under_review_by_mmk", "document_accepted_by_mmk", "payment_in_progress", "payment_completed")');
-                $allocated_budget_stmt->bind_param('i', $created_by);
-                $allocated_budget_stmt->execute();
-                $allocated_budget_result = $allocated_budget_stmt->get_result();
-                $allocated_budget_data = $allocated_budget_result->fetch_assoc();
-                
-                $allocated_budget = $allocated_budget_data['allocated_budget'] ? floatval($allocated_budget_data['allocated_budget']) : 0;
-                $remaining_budget = $total_budget - $allocated_budget;
-                
-                // Check if program budget exceeds remaining budget
-                if ($program_budget > $remaining_budget) {
-                    echo json_encode([
-                        'success' => false, 
-                        'message' => 'Insufficient budget. Program budget (RM ' . number_format($program_budget, 2) . ') exceeds remaining budget (RM ' . number_format($remaining_budget, 2) . ').',
-                        'budget_error' => true,
-                        'program_budget' => $program_budget,
-                        'remaining_budget' => $remaining_budget,
-                        'total_budget' => $total_budget,
-                        'allocated_budget' => $allocated_budget
-                    ]);
-                    exit;
-                }
-                
-                $allocated_budget_stmt->close();
-            }
-        }
-        $user_check->close();
-    }
+    // No budget validation when creating programs - budget is only deducted when reaching Document Accepted status
     
     $stmt = $conn->prepare('INSERT INTO programs (program_name, budget, recipient_name, exco_letter_ref, status, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
     $stmt->bind_param('sdsssis', $program_name, $budget, $recipient_name, $exco_letter_ref, $status, $created_by, $created_at);

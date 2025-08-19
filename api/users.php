@@ -72,15 +72,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['user_budget'])) {
             // Calculate remaining budget for EXCO user
             $total_budget = floatval($user['total_budget']);
             
-            // Get allocated programs budget (complete_can_send_to_mmk status and beyond, excluding rejected)
-            $allocated_budget_stmt = $conn->prepare('SELECT SUM(budget) as allocated_budget FROM programs WHERE created_by = ? AND status IN ("complete_can_send_to_mmk", "under_review_by_mmk", "document_accepted_by_mmk", "payment_in_progress", "payment_completed")');
-            $allocated_budget_stmt->bind_param('i', $user_id);
-            $allocated_budget_stmt->execute();
-            $allocated_budget_result = $allocated_budget_stmt->get_result();
-            $allocated_budget_data = $allocated_budget_result->fetch_assoc();
+            // Get deducted programs budget (only from document_accepted_by_mmk status and beyond, excluding rejected)
+            $deducted_budget_stmt = $conn->prepare('SELECT SUM(budget) as deducted_budget FROM programs WHERE created_by = ? AND status IN ("document_accepted_by_mmk", "payment_in_progress", "payment_completed")');
+            $deducted_budget_stmt->bind_param('i', $user_id);
+            $deducted_budget_stmt->execute();
+            $deducted_budget_result = $deducted_budget_stmt->get_result();
+            $deducted_budget_data = $deducted_budget_result->fetch_assoc();
             
-            $allocated_budget = $allocated_budget_data['allocated_budget'] ? floatval($allocated_budget_data['allocated_budget']) : 0;
-            $remaining_budget = $total_budget - $allocated_budget;
+            $deducted_budget = $deducted_budget_data['deducted_budget'] ? floatval($deducted_budget_data['deducted_budget']) : 0;
+            $remaining_budget = $total_budget - $deducted_budget;
             
             echo json_encode([
                 'success' => true,
@@ -89,12 +89,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['user_budget'])) {
                     'full_name' => $user['full_name'],
                     'role' => $user['role'],
                     'total_budget' => $total_budget,
-                    'allocated_budget' => $allocated_budget,
+                    'deducted_budget' => $deducted_budget,
                     'remaining_budget' => $remaining_budget
                 ]
             ]);
             
-            $approved_budget_stmt->close();
+            $deducted_budget_stmt->close();
         } else {
             echo json_encode([
                 'success' => true,
