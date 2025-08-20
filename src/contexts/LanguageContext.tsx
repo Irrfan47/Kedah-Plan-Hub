@@ -358,19 +358,7 @@ const translations = {
     'report.report_generated': 'Report generated successfully',
     'report.report_failed': 'Failed to generate report',
 
-    // Status translations
-    'status.under_review': 'Under Review',
-    'status.query': 'Query',
-    'status.complete_can_send_to_mmk': 'Complete and can be sent to MMK office',
-    'status.under_review_by_mmk': 'Under Review by MMK office',
-    'status.document_accepted_by_mmk': 'Document Accepted by MMK Office',
-    'status.payment_in_progress': 'Payment in Progress',
-    'status.payment_completed': 'Payment Completed',
-    'status.rejected': 'Rejected',
-    'status.draft': 'Draft',
-    'status.query_answered': 'Query Answered',
-    'status.pending': 'Pending',
-    'status.pending_programs': 'Pending Programs',
+
 
     // Roles
     'role.admin': 'Administrator',
@@ -734,19 +722,7 @@ const translations = {
     'report.report_generated': 'Laporan berjaya dijana',
     'report.report_failed': 'Gagal menjana laporan',
 
-    // Status translations
-    'status.under_review': 'Diperiksa',
-    'status.query': 'Query',
-    'status.complete_can_send_to_mmk': 'Lengkap dan boleh dihantar ke pejabat MMK',
-    'status.under_review_by_mmk': 'Diperiksa oleh pejabat MMK',
-    'status.document_accepted_by_mmk': 'Dokumen Diterima oleh Pejabat MMK',
-    'status.payment_in_progress': 'Bayaran Sedang Berlangsung',
-    'status.payment_completed': 'Lulus Bayaran Di MMK',
-    'status.rejected': 'Ditolak',
-    'status.draft': 'Draf',
-    'status.query_answered': 'Query Dijawab',
-    'status.pending': 'Menunggu',
-    'status.pending_programs': 'Program Menunggu',
+
 
     // Roles
     'role.admin': 'Pentadbir',

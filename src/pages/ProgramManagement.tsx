@@ -187,6 +187,8 @@ export default function ProgramManagement() {
     id: string;
     documentName: string;
     file: File | null;
+    isExisting: boolean;
+    documentId?: string;
   }>>([]);
   const [editFormData, setEditFormData] = useState({
     programName: '',
@@ -269,7 +271,9 @@ export default function ProgramManagement() {
     const newDoc = {
       id: `edit_custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       documentName: '',
-      file: null
+      file: null,
+      isExisting: false,
+      documentId: undefined
     };
     setEditCustomDocuments([...editCustomDocuments, newDoc]);
   };
@@ -286,7 +290,9 @@ export default function ProgramManagement() {
 
   // Function to fetch existing custom documents for display
   const fetchExistingCustomDocuments = (program: any) => {
-    if (!program.documents) return [];
+    if (!program.documents) {
+      return [];
+    }
     
     // Define the 6 predefined document names to filter out
     const predefinedNames = [
@@ -299,7 +305,7 @@ export default function ProgramManagement() {
     ];
     
     // Filter documents that are NOT in the predefined list
-    return program.documents
+    const filteredDocs = program.documents
       .filter((doc: any) => {
         const docName = doc.original_name || doc.name || '';
         return !predefinedNames.some(predefined => docName.includes(predefined));
@@ -325,6 +331,8 @@ export default function ProgramManagement() {
           documentId: doc.id // Store the original document ID for reference
         };
       });
+    
+    return filteredDocs;
   };
 
   useEffect(() => {
@@ -2916,19 +2924,49 @@ export default function ProgramManagement() {
                   </div>
                 )}
 
-                {/* Legacy Documents (if any exist) */}
-                {selectedProgram?.documents && selectedProgram.documents.filter((doc: any) => 
-                  (doc.document_type === 'original' || !doc.document_type) && 
-                  !['surat_akuan', 'surat_kelulusan', 'surat_program', 'surat_exco', 'penyata_akuan', 'borang_daftar'].includes(doc.document_type)
-                ).length > 0 && (
+                {/* Other Documents (excluding predefined documents that are already available) */}
+                {selectedProgram?.documents && selectedProgram.documents.filter((doc: any) => {
+                  // Skip predefined document types
+                  if (['surat_akuan', 'surat_kelulusan', 'surat_program', 'surat_exco', 'penyata_akuan', 'borang_daftar'].includes(doc.document_type)) {
+                    return false;
+                  }
+                  
+                  // Skip documents that are already shown in predefined section
+                  const docName = doc.original_name || doc.name || '';
+                  const isPredefinedDoc = [
+                    'Surat Akuan Pusat Khidmat',
+                    'Surat Kelulusan Pkn', 
+                    'Surat Program',
+                    'Surat Exco',
+                    'Penyata Akaun Bank',
+                    'Borang Daftar Kod'
+                  ].some(predefinedName => docName.includes(predefinedName));
+                  
+                  return !isPredefinedDoc;
+                }).length > 0 && (
                   <div>
                     <h4 className="font-medium mb-3 text-gray-700">Other Documents</h4>
                     <div className="space-y-2">
                       {selectedProgram.documents
-                        .filter((doc: any) => 
-                          (doc.document_type === 'original' || !doc.document_type) && 
-                          !['surat_akuan', 'surat_kelulusan', 'surat_program', 'surat_exco', 'penyata_akuan', 'borang_daftar'].includes(doc.document_type)
-                        )
+                        .filter((doc: any) => {
+                          // Skip predefined document types
+                          if (['surat_akuan', 'surat_kelulusan', 'surat_program', 'surat_exco', 'penyata_akuan', 'borang_daftar'].includes(doc.document_type)) {
+                            return false;
+                          }
+                          
+                          // Skip documents that are already shown in predefined section
+                          const docName = doc.original_name || doc.name || '';
+                          const isPredefinedDoc = [
+                            'Surat Akuan Pusat Khidmat',
+                            'Surat Kelulusan Pkn', 
+                            'Surat Program',
+                            'Surat Exco',
+                            'Penyata Akaun Bank',
+                            'Borang Daftar Kod'
+                          ].some(predefinedName => docName.includes(predefinedName));
+                          
+                          return !isPredefinedDoc;
+                        })
                         .map((doc: any) => {
                           const isImage = doc.original_name && /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(doc.original_name);
                           
@@ -3866,7 +3904,7 @@ export default function ProgramManagement() {
           </DialogHeader>
           <div className="space-y-4">
             <p>Are you sure you want to accept the document for program "{programToApproveByMMK?.program_name || programToApproveByMMK?.programName}"?</p>
-            <p className="text-sm text-muted-foreground">This will skip the MMK review process and change the program status directly to "Document Accepted by MMK Office".</p>
+            <p className="text-sm text-muted-foreground">This will change the program status directly to "Document Accepted by MMK Office".</p>
             <div className="flex justify-end gap-2">
               <Button 
                 variant="outline" 
@@ -3880,7 +3918,7 @@ export default function ProgramManagement() {
                               <Button 
                   onClick={() => handleApproveByMMK(programToApproveByMMK.id)}
                 >
-                  Accept Document (Skip MMK Review)
+                  Accept Document
                 </Button>
             </div>
           </div>

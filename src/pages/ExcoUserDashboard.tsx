@@ -369,7 +369,7 @@ export default function ExcoUserDashboard() {
                 {excoUser.full_name}
               </h1>
               <p className="text-gray-600">{excoUser.email}</p>
-              <p className="text-sm text-gray-500">{excoUser.portfolio || t('profile.no_portfolio', 'No portfolio')}</p>
+              <p className="text-sm text-gray-500">{excoUser.portfolio || t('profile.no_portfolio')}</p>
             </div>
           </div>
         )}

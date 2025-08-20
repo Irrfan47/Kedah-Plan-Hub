@@ -137,9 +137,9 @@ export function NotificationDropdown() {
                     size="sm"
                     onClick={() => handleMarkAsRead()}
                     className="text-xs"
+                    title="Mark all as read"
                   >
-                    <Check className="w-3 h-3 mr-1" />
-                    Mark all read
+                    <Check className="w-3 h-3" />
                   </Button>
                 )}
                 {notifications.length > 0 && (
@@ -148,9 +148,9 @@ export function NotificationDropdown() {
                     size="sm"
                     onClick={() => handleDeleteNotification()}
                     className="text-xs text-red-600 hover:text-red-700"
+                    title="Clear all notifications"
                   >
-                    <Trash2 className="w-3 h-3 mr-1" />
-                    Clear all
+                    <Trash2 className="w-3 h-3" />
                   </Button>
                 )}
               </div>
