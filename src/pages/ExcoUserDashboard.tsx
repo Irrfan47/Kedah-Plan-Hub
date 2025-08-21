@@ -8,12 +8,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Users, FileText, CheckCircle, XCircle, Clock, Settings, Wallet, ChevronDown, ChevronUp } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { getExcoUserDashboard, updateExcoUserBudget } from "@/api/backend";
+import { getExcoUserDashboard, updateExcoUserDashboard } from "@/api/backend";
 import { BASE_URL } from "@/api/backend";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import ProgramManagement from './ProgramManagement';
 
 interface ExcoUser {
   id: number;
@@ -49,6 +50,9 @@ export default function ExcoUserDashboard() {
   const [newBudget, setNewBudget] = useState("");
   const [showBudgetForm, setShowBudgetForm] = useState(false);
   
+  // Collapsible state for recent programs
+  const [isRecentProgramsOpen, setIsRecentProgramsOpen] = useState(false);
+
   // Modal states for program cards
   const [isTotalProgramsModalOpen, setIsTotalProgramsModalOpen] = useState(false);
   const [isPaymentCompletedModalOpen, setIsPaymentCompletedModalOpen] = useState(false);
@@ -60,9 +64,6 @@ export default function ExcoUserDashboard() {
   const [paymentCompletedData, setPaymentCompletedData] = useState<any[]>([]);
   const [rejectedData, setRejectedData] = useState<any[]>([]);
   const [pendingData, setPendingData] = useState<any[]>([]);
-  
-  // Collapsible state for recent programs
-  const [isRecentProgramsOpen, setIsRecentProgramsOpen] = useState(false);
 
   useEffect(() => {
     // Get EXCO user data from navigation state
@@ -576,6 +577,21 @@ export default function ExcoUserDashboard() {
           </CollapsibleContent>
         </Collapsible>
       </Card>
+
+      {/* Program Management - Full Functionality */}
+      {(user?.role === "finance_mmk") && (
+        <div className="mt-8">
+          <Card>
+            <CardContent>
+              {/* Reuse the entire Program Management page here */}
+              <ProgramManagement 
+                initialUserId={excoUser?.id}
+                initialUserName={excoUser?.full_name}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Program Detail Modals */}
       

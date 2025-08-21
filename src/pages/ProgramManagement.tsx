@@ -129,7 +129,7 @@ const getStatusLabel = (status: string) => {
   return labels[status as keyof typeof labels] || 'status.draft';
 };
 
-export default function ProgramManagement() {
+export default function ProgramManagement({ initialUserId, initialUserName }: { initialUserId?: any, initialUserName?: any } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -336,10 +336,13 @@ export default function ProgramManagement() {
   };
 
   useEffect(() => {
-    console.log('ProgramManagement useEffect triggered', { user, locationState: location.state });
+    console.log('ProgramManagement useEffect triggered', { user, locationState: location.state, initialUserId });
     
     try {
-    fetchExcoUsers();
+    // Only fetch EXCO users if not in embedded mode
+    if (!initialUserId) {
+      fetchExcoUsers();
+    }
     
       // Fetch all users to map IDs to names
       fetch(`${BASE_URL}/users.php`)
@@ -357,8 +360,18 @@ export default function ProgramManagement() {
           console.error('Failed to fetch users for userMap:', error);
         });
       
+    // Check if we have initial user props (from embedded usage in EXCO user dashboard)
+    if (initialUserId && initialUserName) {
+      console.log('Setting selected user from initial props:', initialUserId);
+      setSelectedExcoUser({ 
+        id: initialUserId, 
+        name: initialUserName 
+      });
+      fetchProgramsForUser(initialUserId);
+      fetchUserBudget(initialUserId);
+    }
     // Check if we have a pre-selected user from navigation state (from EXCO user dashboard)
-    if (location.state?.selectedUserId && location.state?.selectedUserName) {
+    else if (location.state?.selectedUserId && location.state?.selectedUserName) {
         console.log('Setting selected user from location state:', location.state.selectedUserId);
       setSelectedExcoUser({ 
         id: location.state.selectedUserId, 
@@ -1070,7 +1083,7 @@ export default function ProgramManagement() {
     
     if (program.documents && Array.isArray(program.documents)) {
       program.documents.forEach((doc: any) => {
-        const docName = doc.original_name || doc.name;
+        const docName = doc.original_name || doc.name || '';
         if (docName.includes('Surat Akuan Pusat Khidmat')) {
           documentMap.suratAkuanPusatKhidmat = doc;
         } else if (docName.includes('Surat Kelulusan Pkn')) {
@@ -1418,11 +1431,16 @@ export default function ProgramManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{t('programs.title')}</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            {initialUserId ? '' : t('programs.title')}
+          </h1>
           <p className="text-muted-foreground">
-                            {user?.role === 'finance_mmk'
-              ? 'Set and manage EXCO user budgets. Click View to see programs for a user.'
-              : t('programs.create_manage_desc')}
+            {initialUserId 
+              ? ''
+              : user?.role === 'finance_mmk'
+                ? 'Set and manage EXCO user budgets. Click View to see programs for a user.'
+                : t('programs.create_manage_desc')
+            }
           </p>
         </div>
         {canCreateProgram && (user?.role !== 'exco_user' ? !selectedExcoUser : true) && (
@@ -1923,7 +1941,7 @@ export default function ProgramManagement() {
       </div>
 
       {/* EXCO Users Table (default view) */}
-      {user?.role !== 'exco_user' && !selectedExcoUser && (
+      {user?.role !== 'exco_user' && !selectedExcoUser && !initialUserId && (
         <Card className="card-elevated">
           <CardHeader>
             <CardTitle>{t('exco.users.budgets')}</CardTitle>
@@ -1950,7 +1968,7 @@ export default function ProgramManagement() {
       {selectedExcoUser && (
         <>
           <div className="flex items-center gap-4 mb-4">
-            {user?.role !== 'exco_user' && (
+            {user?.role !== 'exco_user' && !initialUserId && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1967,7 +1985,9 @@ export default function ProgramManagement() {
                 </Tooltip>
               </TooltipProvider>
             )}
-            <h2 className="text-2xl font-semibold">{t('programs.title')} for {selectedExcoUser.name}</h2>
+            <h2 className="text-2xl font-semibold">
+              {initialUserId ? t('programs.title') : `${t('programs.title')} for ${selectedExcoUser.name}`}
+            </h2>
           </div>
           
           {/* Budget Summary for EXCO Users */}
@@ -2000,7 +2020,9 @@ export default function ProgramManagement() {
           {/* Filters */}
           <Card>
             <CardHeader>
-              <CardTitle>{t('programs.title')}</CardTitle>
+              <CardTitle>
+                {initialUserId ? '' : t('programs.title')}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {/* ... existing filters ... */}
