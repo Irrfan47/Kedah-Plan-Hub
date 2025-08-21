@@ -23,6 +23,7 @@ interface ReportProgram {
   created_by: string;
   voucher_number?: string;
   eft_number?: string;
+  eft_date?: string;
 }
 
 interface User {
@@ -355,7 +356,7 @@ export default function Report() {
                           <TableHead>{t('status.letter_ref')}</TableHead>
                           <TableHead>{t('status.voucher_no')}</TableHead>
                           <TableHead>{t('status.eft_no')}</TableHead>
-                          <TableHead>{t('programs.created_at')}</TableHead>
+                          <TableHead>EFT Date</TableHead>
                           <TableHead>{t('programs.status')}</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -380,9 +381,9 @@ export default function Report() {
                              <TableCell>
                                {program.eft_number || '-'}
                              </TableCell>
-                             <TableCell>
-                               {formatDate(program.created_at)}
-                             </TableCell>
+                                                         <TableCell>
+                              {program.eft_date ? formatDate(program.eft_date) : '-'}
+                            </TableCell>
                              <TableCell>
                                <Badge className={getStatusColor(program.status)}>
                                  {t(getStatusLabel(program.status))}

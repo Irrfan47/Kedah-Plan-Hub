@@ -52,7 +52,7 @@ try {
 
     // Get programs
     $stmt = $conn->prepare("
-        SELECT id, program_name, budget, recipient_name, exco_letter_ref, status, created_at, created_by, voucher_number, eft_number 
+        SELECT id, program_name, budget, recipient_name, exco_letter_ref, status, created_at, created_by, voucher_number, eft_number, eft_date 
         FROM programs 
         $whereClause 
         ORDER BY created_by, created_at DESC
@@ -77,7 +77,8 @@ try {
             'created_at' => $row['created_at'],
             'created_by' => $row['created_by'],
             'voucher_number' => $row['voucher_number'],
-            'eft_number' => $row['eft_number']
+            'eft_number' => $row['eft_number'],
+            'eft_date' => $row['eft_date']
         ];
     }
 
@@ -172,16 +173,16 @@ function generatePDF($programs, $startDate, $endDate, $userId, $statusFilter) {
         $pdf->SetFont('Arial', 'B', 10);
         $pdf->SetFillColor(240, 240, 240);
         
-        // Calculate column widths - adjusted for voucher and EFT numbers
-        $colWidths = [35, 20, 25, 20, 20, 20, 20, 20];
-        $pdf->Cell($colWidths[0], 8, 'Program Name', 1, 0, 'L', true);
-        $pdf->Cell($colWidths[1], 8, 'Budget', 1, 0, 'R', true);
-        $pdf->Cell($colWidths[2], 8, 'Recipient', 1, 0, 'L', true);
-        $pdf->Cell($colWidths[3], 8, 'Reference', 1, 0, 'L', true);
-        $pdf->Cell($colWidths[4], 8, 'Voucher', 1, 0, 'L', true);
-        $pdf->Cell($colWidths[5], 8, 'EFT', 1, 0, 'L', true);
-        $pdf->Cell($colWidths[6], 8, 'Created', 1, 0, 'C', true);
-        $pdf->Cell($colWidths[7], 8, 'Status', 1, 1, 'C', true);
+                 // Calculate column widths - adjusted for voucher and EFT numbers
+         $colWidths = [35, 20, 25, 20, 20, 20, 20, 20];
+         $pdf->Cell($colWidths[0], 8, 'Program Name', 1, 0, 'L', true);
+         $pdf->Cell($colWidths[1], 8, 'Budget', 1, 0, 'R', true);
+         $pdf->Cell($colWidths[2], 8, 'Recipient', 1, 0, 'L', true);
+         $pdf->Cell($colWidths[3], 8, 'Reference', 1, 0, 'L', true);
+         $pdf->Cell($colWidths[4], 8, 'Voucher', 1, 0, 'L', true);
+         $pdf->Cell($colWidths[5], 8, 'EFT', 1, 0, 'L', true);
+         $pdf->Cell($colWidths[6], 8, 'EFT Date', 1, 0, 'C', true);
+         $pdf->Cell($colWidths[7], 8, 'Status', 1, 1, 'C', true);
         
         // Add program data
         $pdf->SetFont('Arial', '', 9);
@@ -191,17 +192,17 @@ function generatePDF($programs, $startDate, $endDate, $userId, $statusFilter) {
             // Check if we need a new page
             if ($pdf->GetY() > 250) {
                 $pdf->AddPage();
-                // Re-add header for new page
-                $pdf->SetFont('Arial', 'B', 10);
-                $pdf->SetFillColor(240, 240, 240);
-                $pdf->Cell($colWidths[0], 8, 'Program Name', 1, 0, 'L', true);
-                $pdf->Cell($colWidths[1], 8, 'Budget', 1, 0, 'R', true);
-                $pdf->Cell($colWidths[2], 8, 'Recipient', 1, 0, 'L', true);
-                $pdf->Cell($colWidths[3], 8, 'Reference', 1, 0, 'L', true);
-                $pdf->Cell($colWidths[4], 8, 'Voucher', 1, 0, 'L', true);
-                $pdf->Cell($colWidths[5], 8, 'EFT', 1, 0, 'L', true);
-                $pdf->Cell($colWidths[6], 8, 'Created', 1, 0, 'C', true);
-                $pdf->Cell($colWidths[7], 8, 'Status', 1, 1, 'C', true);
+                                 // Re-add header for new page
+                 $pdf->SetFont('Arial', 'B', 10);
+                 $pdf->SetFillColor(240, 240, 240);
+                 $pdf->Cell($colWidths[0], 8, 'Program Name', 1, 0, 'L', true);
+                 $pdf->Cell($colWidths[1], 8, 'Budget', 1, 0, 'R', true);
+                 $pdf->Cell($colWidths[2], 8, 'Recipient', 1, 0, 'L', true);
+                 $pdf->Cell($colWidths[3], 8, 'Reference', 1, 0, 'L', true);
+                 $pdf->Cell($colWidths[4], 8, 'Voucher', 1, 0, 'L', true);
+                 $pdf->Cell($colWidths[5], 8, 'EFT', 1, 0, 'L', true);
+                 $pdf->Cell($colWidths[6], 8, 'EFT Date', 1, 0, 'C', true);
+                 $pdf->Cell($colWidths[7], 8, 'Status', 1, 1, 'C', true);
                 $pdf->SetFont('Arial', '', 9);
             }
             
@@ -233,14 +234,14 @@ function generatePDF($programs, $startDate, $endDate, $userId, $statusFilter) {
                 $statusText = substr($statusText, 0, 5) . '...';
             }
             
-            $pdf->Cell($colWidths[0], 6, $programName, 1, 0, 'L');
-            $pdf->Cell($colWidths[1], 6, number_format($program['budget'], 2), 1, 0, 'R');
-            $pdf->Cell($colWidths[2], 6, $recipientName, 1, 0, 'L');
-            $pdf->Cell($colWidths[3], 6, $reference, 1, 0, 'L');
-            $pdf->Cell($colWidths[4], 6, $voucherNumber, 1, 0, 'L');
-            $pdf->Cell($colWidths[5], 6, $eftNumber, 1, 0, 'L');
-            $pdf->Cell($colWidths[6], 6, date('d/m/Y', strtotime($program['created_at'])), 1, 0, 'C');
-            $pdf->Cell($colWidths[7], 6, $statusText, 1, 1, 'C');
+                         $pdf->Cell($colWidths[0], 6, $programName, 1, 0, 'L');
+             $pdf->Cell($colWidths[1], 6, number_format($program['budget'], 2), 1, 0, 'R');
+             $pdf->Cell($colWidths[2], 6, $recipientName, 1, 0, 'L');
+             $pdf->Cell($colWidths[3], 6, $reference, 1, 0, 'L');
+             $pdf->Cell($colWidths[4], 6, $voucherNumber, 1, 0, 'L');
+             $pdf->Cell($colWidths[5], 6, $eftNumber, 1, 0, 'L');
+             $pdf->Cell($colWidths[6], 6, $program['eft_date'] ? date('d/m/Y', strtotime($program['eft_date'])) : '-', 1, 0, 'C');
+             $pdf->Cell($colWidths[7], 6, $statusText, 1, 1, 'C');
             
             // Only count budget for completed programs, not rejected
             if ($program['status'] === 'payment_completed') {
