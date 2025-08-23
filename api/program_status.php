@@ -195,9 +195,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         $revert_stmt->bind_param('si', 'complete_can_send_to_mmk', $program_id);
                                         $revert_stmt->execute();
                                         
+                                        $exceeded_amount = $program_budget - $remaining_budget;
                                         echo json_encode([
                                             'success' => false, 
-                                            'message' => 'Insufficient budget. Program budget (RM ' . number_format($program_budget, 2) . ') exceeds remaining budget (RM ' . number_format($remaining_budget, 2) . '). Cannot accept document.',
+                                            'message' => 'Budget exceeded. Program budget exceeds remaining budget by RM ' . number_format($exceeded_amount, 2) . '. Cannot accept document.',
                                             'budget_error' => true,
                                             'program_budget' => $program_budget,
                                             'remaining_budget' => $remaining_budget,

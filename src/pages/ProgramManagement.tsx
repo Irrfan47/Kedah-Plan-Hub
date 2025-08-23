@@ -1894,10 +1894,21 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
                         </span>
                       </div>
                       <div className="col-span-2">
-                        <span className="text-gray-600">{t('budget.after_this_program')}:</span>
-                        <span className={`ml-2 font-medium ${parseFloat(formData.budget) > userBudgetInfo.remaining_budget ? 'text-red-600' : 'text-green-600'}`}>
-                          RM {(userBudgetInfo.remaining_budget - parseFloat(formData.budget)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {t('budget.remaining_after_program')}
-                        </span>
+                        {parseFloat(formData.budget) > userBudgetInfo.remaining_budget ? (
+                          <>
+                            <span className="text-gray-600">{t('budget.budget_exceeded')}:</span>
+                            <span className="ml-2 font-medium text-red-600">
+                              {t('budget.exceeded_amount').replace('{amount}', (parseFloat(formData.budget) - userBudgetInfo.remaining_budget).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-gray-600">{t('budget.after_this_program')}:</span>
+                            <span className="ml-2 font-medium text-green-600">
+                              RM {(userBudgetInfo.remaining_budget - parseFloat(formData.budget)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {t('budget.remaining_after_program')}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2009,9 +2020,9 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-orange-600">
-                      RM {userBudgetInfo.allocated_budget?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                      RM {((userBudgetInfo.total_budget || 0) - (userBudgetInfo.remaining_budget || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
-                    <div className="text-sm text-gray-600">{t('budget.allocated_programs')}</div>
+                    <div className="text-sm text-gray-600">{t('budget.budget_used')}</div>
                   </div>
                 </div>
               </CardContent>
