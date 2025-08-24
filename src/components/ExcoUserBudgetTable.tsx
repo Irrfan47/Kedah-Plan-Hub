@@ -62,9 +62,8 @@ const ExcoUserBudgetTable: React.FC<Props> = ({ users, userRole, onBudgetChange,
                 editBudgetId === user.id ? (
                   <div className="flex items-center gap-2">
                     <Input
-                      type="number"
+                      type="text"
                       value={budgetInput[user.id] ?? ""}
-                      min={0}
                       onChange={(e) => setBudgetInput((prev) => ({ ...prev, [user.id]: e.target.value }))}
                       className="w-24"
                     />

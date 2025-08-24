@@ -9,6 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
+session_start();
 require_once 'config.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -148,9 +149,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $excoUserId = intval($_GET['exco_user_id']);
         
-        // Get user role first to filter notifications appropriately
+        // Get current user ID from session
+        $currentUserId = $_SESSION['user_id'] ?? null;
+        if (!$currentUserId) {
+            echo json_encode(['success' => false, 'message' => 'User not authenticated']);
+            exit;
+        }
+        
+        // Get current user role to filter notifications appropriately
         $roleStmt = $conn->prepare('SELECT role FROM users WHERE id = ?');
-        $roleStmt->bind_param('i', $excoUserId);
+        $roleStmt->bind_param('i', $currentUserId);
         $roleStmt->execute();
         $roleResult = $roleStmt->get_result()->fetch_assoc();
         $userRole = $roleResult ? $roleResult['role'] : 'exco_user';
@@ -160,24 +168,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $params = [];
         $bindTypes = '';
         
-        // ALL users only see notifications directly sent to them (n.user_id = ?)
-        // This matches how the main notification system works
-        $query = '
-            SELECT DISTINCT
-                n.id,
-                n.title,
-                n.message,
-                n.type,
-                n.is_read,
-                n.program_id,
-                n.created_at
-            FROM notifications n
-            WHERE n.user_id = ?
-            ORDER BY n.created_at DESC
-            LIMIT 50
-        ';
-        $params = [$excoUserId];
-        $bindTypes = 'i';
+        // Filter notifications based on user role for UserNotificationBadge
+        // UserNotificationBadge shows notifications for programs created by the specified EXCO user
+        if ($userRole === 'exco_user') {
+            // EXCO users should NOT see UserNotificationBadge at all
+            $query = '
+                SELECT DISTINCT
+                    n.id,
+                    n.title,
+                    n.message,
+                    n.type,
+                    n.is_read,
+                    n.program_id,
+                    n.created_at
+                FROM notifications n
+                WHERE n.user_id = ? AND 1=0
+                ORDER BY n.created_at DESC
+                LIMIT 50
+            ';
+        } elseif ($userRole === 'finance_mmk') {
+            // Finance MMK users see under_review and query_answered notifications for programs created by this EXCO user
+            $query = '
+                SELECT DISTINCT
+                    n.id,
+                    n.title,
+                    n.message,
+                    n.type,
+                    n.is_read,
+                    n.program_id,
+                    n.created_at
+                FROM notifications n
+                JOIN programs p ON n.program_id = p.id
+                WHERE p.created_by = ? AND n.user_id = ? AND (
+                    (n.type = "status_change" AND n.message LIKE "%under review%") OR
+                    n.type = "query_answered"
+                )
+                ORDER BY n.created_at DESC
+                LIMIT 50
+            ';
+        } else {
+            // Finance Officer, Super Admin, Admin see rejected and payment_completed notifications for programs created by this EXCO user
+            $query = '
+                SELECT DISTINCT
+                    n.id,
+                    n.title,
+                    n.message,
+                    n.type,
+                    n.is_read,
+                    n.program_id,
+                    n.created_at
+                FROM notifications n
+                JOIN programs p ON n.program_id = p.id
+                WHERE p.created_by = ? AND n.user_id = ? AND n.type = "status_change" AND (
+                    n.message LIKE "%rejected%" OR 
+                    n.message LIKE "%payment completed%"
+                )
+                ORDER BY n.created_at DESC
+                LIMIT 50
+            ';
+        }
+        
+        // Set parameters based on role
+        if ($userRole === 'exco_user') {
+            $params = [$excoUserId];
+            $bindTypes = 'i';
+        } else {
+            // For non-EXCO users, we need both the EXCO user ID (program creator) and current user ID
+            $params = [$excoUserId, $currentUserId];
+            $bindTypes = 'ii';
+        }
         
         $stmt = $conn->prepare($query);
         if (!empty($params)) {
@@ -205,10 +264,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // Add debug information
         $debug = [
             'exco_user_id' => $excoUserId,
+            'current_user_id' => $currentUserId,
             'user_role' => $userRole,
             'total_notifications_found' => count($notifications),
             'query_executed' => true,
-            'query_used' => $query
+            'query_used' => $query,
+            'parameters' => $params
         ];
         
         // If debug mode is enabled, show more information

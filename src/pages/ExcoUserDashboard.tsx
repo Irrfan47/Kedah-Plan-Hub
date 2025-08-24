@@ -469,7 +469,7 @@ export default function ExcoUserDashboard() {
                   ) : (
                     <div className="space-y-2">
                       <Input
-                        type="number"
+                        type="text"
                         placeholder={t('dashboard.enter_budget')}
                         value={newBudget}
                         onChange={(e) => setNewBudget(e.target.value)}

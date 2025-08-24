@@ -60,32 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $remark_creator_stmt->close();
             
-            // Notify users based on their role
-            $all_users = $conn->query("SELECT id, role, full_name FROM users WHERE role IN ('admin', 'exco_user', 'finance_mmk', 'finance_officer', 'super_admin')");
-            while ($user = $all_users->fetch_assoc()) {
-                // Skip the user who added the remark
-                if ($user['id'] != $remark_creator_id) {
-                    // For EXCO users, only notify if they created the program
-                    if ($user['role'] === 'exco_user') {
-                        if ($user['id'] == $program_creator) {
-                            $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
-                            $title = 'New Remark Added';
-                            $message = "New remark added to your program '$program_name' by $created_by";
-                            $type = 'remark_added';
-                            $notification_stmt->bind_param('isssi', $user['id'], $title, $message, $type, $program_id);
-                            $notification_stmt->execute();
-                        }
-                    } else {
-                        // For other roles (admin, finance_mmk, finance_officer, super_admin), notify for all programs
-                        $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
-                        $title = 'New Remark Added';
-                        $message = "New remark added to program '$program_name' by $created_by";
-                        $type = 'remark_added';
-                        $notification_stmt->bind_param('isssi', $user['id'], $title, $message, $type, $program_id);
-                        $notification_stmt->execute();
-                    }
-                }
-            }
+            // Remark notifications removed from general notification system as per requirements
+            // Only UserNotificationBadge will show relevant notifications based on user role
         }
         
         echo json_encode(['success' => true, 'remark_id' => $stmt->insert_id]);

@@ -68,28 +68,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $program_name = $program_result['program_name'];
         $program_creator = $program_result['created_by'];
         
-        // Create notifications for the specific EXCO user who created the program
-        // But only if the query creator is different from the program creator
-        $creator_user = $conn->query("SELECT id FROM users WHERE full_name = '$program_creator' AND role = 'exco_user'");
-        if ($creator = $creator_user->fetch_assoc()) {
-            // Get the user ID of the person who created the query
-            $query_creator_stmt = $conn->prepare("SELECT id FROM users WHERE full_name = ?");
-            $query_creator_stmt->bind_param('s', $created_by);
-            $query_creator_stmt->execute();
-            $query_creator_result = $query_creator_stmt->get_result();
-            $query_creator_id = null;
-            if ($query_creator_row = $query_creator_result->fetch_assoc()) {
-                $query_creator_id = $query_creator_row['id'];
-            }
-            $query_creator_stmt->close();
+        // Notify the EXCO user who created the program when a query is created
+        if ($program_creator) {
+            // Check if the program creator is an EXCO user
+            $user_role_stmt = $conn->prepare('SELECT role FROM users WHERE id = ?');
+            $user_role_stmt->bind_param('i', $program_creator);
+            $user_role_stmt->execute();
+            $user_role_result = $user_role_stmt->get_result()->fetch_assoc();
+            $user_role = $user_role_result ? $user_role_result['role'] : '';
             
-            // Only notify if the query creator is different from the program creator
-            if ($creator['id'] != $query_creator_id) {
+            if ($user_role === 'exco_user') {
                 $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
-                $title = 'New Query from Finance MMK';
+                $title = 'Program Status Changed';
                 $message = "Finance MMK has submitted a query for program '$program_name'";
-                $type = 'query';
-                $notification_stmt->bind_param('isssi', $creator['id'], $title, $message, $type, $program_id);
+                $type = 'status_change';
+                $notification_stmt->bind_param('isssi', $program_creator, $title, $message, $type, $program_id);
                 $notification_stmt->execute();
             }
         }
@@ -150,19 +143,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         }
         $answer_creator_stmt->close();
         
-        $finance_mmk_users = $conn->query("SELECT id FROM users WHERE role = 'finance_mmk'");
-        while ($finance_mmk = $finance_mmk_users->fetch_assoc()) {
-            // Skip the user who answered the query
-            if ($finance_mmk['id'] != $answer_creator_id) {
-                $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
-                $title = 'Query Answered';
-                $message = "EXCO USER has answered a query for program '$program_name'";
-                $type = 'query_answered';
-                $notification_stmt->bind_param('isssi', $finance_mmk['id'], $title, $message, $type, $program_id);
-                $notification_stmt->execute();
-            }
-        }
-        
+                 // Notify Finance MMK users
+         $finance_mmk_users = $conn->query("SELECT id FROM users WHERE role = 'finance_mmk'");
+         while ($finance_mmk = $finance_mmk_users->fetch_assoc()) {
+             // Skip the user who answered the query
+             if ($finance_mmk['id'] != $answer_creator_id) {
+                 $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
+                 $title = 'Query Answered';
+                 $message = "Query answered for '$program_name'";
+                 $type = 'query_answered';
+                 $notification_stmt->bind_param('isssi', $finance_mmk['id'], $title, $message, $type, $program_id);
+                 $notification_stmt->execute();
+             }
+         }
         echo json_encode(['success' => true]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to answer query.']);

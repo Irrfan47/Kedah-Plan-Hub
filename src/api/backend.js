@@ -424,8 +424,9 @@ export async function deleteUser(userId) {
 }
 
 // 7. Example: Get all programs
-export async function getPrograms() {
-  const res = await fetch(`${BASE_URL}/programs.php`);
+export async function getPrograms(excoUserId = null) {
+  const url = excoUserId ? `${BASE_URL}/programs.php?exco_user_id=${excoUserId}` : `${BASE_URL}/programs.php`;
+  const res = await fetch(url);
   return res.json();
 }
 

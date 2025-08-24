@@ -91,71 +91,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         exit;
                     }
                     
-                    // Always notify the program creator for any status change
+                    // Notify the program creator only for specific status changes
                     if ($created_by) {
-                        error_log("Creating notification for program creator - user_id: $created_by, program_name: $program_name, status: $status");
+                        // Check if the program creator is an EXCO user
+                        $user_role_stmt = $conn->prepare('SELECT role FROM users WHERE id = ?');
+                        $user_role_stmt->bind_param('i', $created_by);
+                        $user_role_stmt->execute();
+                        $user_role_result = $user_role_stmt->get_result()->fetch_assoc();
+                        $user_role = $user_role_result ? $user_role_result['role'] : '';
                         
-                        // Validate required fields for notification
-                        if (!$created_by || !$program_name || !$status || !$program_id) {
-                            error_log("ERROR: Missing required fields for notification - created_by: $created_by, program_name: $program_name, status: $status, program_id: $program_id");
-                        } else {
-                            $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
-                            $title = 'Program Status Changed';
-                            $message = "Your program '$program_name' status changed to " . ucwords(str_replace('_', ' ', $status));
-                            $type = 'status_change';
-                            $notification_stmt->bind_param('isssi', $created_by, $title, $message, $type, $program_id);
-                            if ($notification_stmt->execute()) {
-                                error_log("Notification created successfully for program creator");
-                            } else {
-                                error_log("Failed to create notification for program creator: " . $notification_stmt->error);
-                            }
-                        }
+                                                 // Send notifications to EXCO users for specific statuses
+                         if ($user_role === 'exco_user' && in_array($status, ['under_review', 'query', 'payment_completed', 'rejected'])) {
+                             error_log("Creating notification for EXCO user - user_id: $created_by, program_name: $program_name, status: $status");
+                             
+                             // Validate required fields for notification
+                             if (!$created_by || !$program_name || !$status || !$program_id) {
+                                 error_log("ERROR: Missing required fields for notification - created_by: $created_by, program_name: $program_name, status: $status, program_id: $program_id");
+                             } else {
+                                 $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
+                                 $title = 'Program Status Changed';
+                                 if ($status === 'under_review') {
+                                     $message = "Program '$program_name' is under review";
+                                 } elseif ($status === 'query') {
+                                     $message = "Query submitted for '$program_name'";
+                                 } elseif ($status === 'payment_completed') {
+                                     $message = "Payment completed for '$program_name'";
+                                 } elseif ($status === 'rejected') {
+                                     $message = "Program '$program_name' was rejected";
+                                 } else {
+                                     $message = "Status changed to " . ucwords(str_replace('_', ' ', $status));
+                                 }
+                                 $type = 'status_change';
+                                 $notification_stmt->bind_param('isssi', $created_by, $title, $message, $type, $program_id);
+                                 if ($notification_stmt->execute()) {
+                                     error_log("Notification created successfully for EXCO user");
+                                 } else {
+                                     error_log("Failed to create notification for EXCO user: " . $notification_stmt->error);
+                                 }
+                             }
+                         }
                     }
                     
-                    // Create notifications based on status change
-                    if ($status === 'under_review') {
-                        // Notify Finance MMK users
-                        $finance_users = $conn->query("SELECT id FROM users WHERE role IN ('finance_mmk', 'finance_officer', 'super_admin')");
-                        while ($finance = $finance_users->fetch_assoc()) {
-                            $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
-                            $title = 'Program Under Review';
-                            $message = "Program '$program_name' is now under review";
-                            $type = 'status_change';
-                            $notification_stmt->bind_param('isssi', $finance['id'], $title, $message, $type, $program_id);
-                            $notification_stmt->execute();
-                        }
-                    } elseif ($status === 'payment_completed') {
-                        // Notify Finance Officer and Super Admin
-                        $finance_officer_users = $conn->query("SELECT id FROM users WHERE role = 'finance_officer'");
-                        while ($finance_officer = $finance_officer_users->fetch_assoc()) {
-                            $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
-                            $title = 'Payment Completed';
-                            $message = "Program '$program_name' payment has been completed";
-                            $type = 'status_change';
-                            $notification_stmt->bind_param('isssi', $finance_officer['id'], $title, $message, $type, $program_id);
-                            $notification_stmt->execute();
-                        }
-                        
-                        $super_admin_users = $conn->query("SELECT id FROM users WHERE role = 'super_admin'");
-                        while ($super_admin = $super_admin_users->fetch_assoc()) {
-                            $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
-                            $title = 'Payment Completed';
-                            $message = "Program '$program_name' payment has been completed";
-                            $type = 'status_change';
-                            $notification_stmt->bind_param('isssi', $super_admin['id'], $title, $message, $type, $program_id);
-                            $notification_stmt->execute();
-                        }
-                        
-                        // Notify Admin users
-                        $admin_users = $conn->query("SELECT id FROM users WHERE role = 'admin'");
-                        while ($admin = $admin_users->fetch_assoc()) {
-                            $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
-                            $title = 'Payment Completed';
-                            $message = "Program '$program_name' payment has been completed";
-                            $type = 'status_change';
-                            $notification_stmt->bind_param('isssi', $admin['id'], $title, $message, $type, $program_id);
-                            $notification_stmt->execute();
-                        }
+                                         // Create notifications based on status change
+                     if ($status === 'under_review') {
+                         // Notify Finance MMK users
+                         $finance_mmk_users = $conn->query("SELECT id FROM users WHERE role = 'finance_mmk'");
+                         while ($finance_mmk = $finance_mmk_users->fetch_assoc()) {
+                             $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
+                             $title = 'Program Under Review';
+                             $message = "Program '$program_name' is under review";
+                             $type = 'status_change';
+                             $notification_stmt->bind_param('isssi', $finance_mmk['id'], $title, $message, $type, $program_id);
+                             $notification_stmt->execute();
+                         }
+                                         } elseif ($status === 'payment_completed') {
+                         // Notify Finance Officer, Super Admin, and Admin users
+                         $other_users = $conn->query("SELECT id FROM users WHERE role IN ('finance_officer', 'super_admin', 'admin')");
+                         while ($other_user = $other_users->fetch_assoc()) {
+                             $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
+                             $title = 'Payment Completed';
+                             $message = "Payment completed for '$program_name'";
+                             $type = 'status_change';
+                             $notification_stmt->bind_param('isssi', $other_user['id'], $title, $message, $type, $program_id);
+                             $notification_stmt->execute();
+                         }
                     } elseif ($status === 'document_accepted_by_mmk') {
                         // Budget validation and deduction when program reaches Document Accepted status
                         $program_budget_stmt = $conn->prepare('SELECT budget, created_by FROM programs WHERE id = ?');
@@ -214,9 +213,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $user_check->close();
                             $program_budget_stmt->close();
                         }
-                    } elseif ($status === 'rejected') {
-                        // No need to notify program creator here - already done in general block
-                    }
+                                         } elseif ($status === 'rejected') {
+                         // Notify Finance Officer, Super Admin, and Admin users
+                         $other_users = $conn->query("SELECT id FROM users WHERE role IN ('finance_officer', 'super_admin', 'admin')");
+                         while ($other_user = $other_users->fetch_assoc()) {
+                             $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
+                             $title = 'Program Rejected';
+                             $message = "Program '$program_name' was rejected";
+                             $type = 'status_change';
+                             $notification_stmt->bind_param('isssi', $other_user['id'], $title, $message, $type, $program_id);
+                             $notification_stmt->execute();
+                         }
+                     }
                 }
                 
                 error_log("Program status change completed successfully for program_id: $program_id, new_status: $status");

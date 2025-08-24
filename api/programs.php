@@ -114,15 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $program_id = $stmt->insert_id;
         
         // Create notifications for different user roles
-        $admin_users = $conn->query("SELECT id FROM users WHERE role = 'admin'");
-        while ($admin = $admin_users->fetch_assoc()) {
-            $notification_stmt = $conn->prepare('INSERT INTO notifications (user_id, title, message, type, program_id) VALUES (?, ?, ?, ?, ?)');
-            $title = 'New Program Created';
-            $message = "Program '$program_name' has been created by $created_by";
-            $type = 'program_created';
-            $notification_stmt->bind_param('isssi', $admin['id'], $title, $message, $type, $program_id);
-            $notification_stmt->execute();
-        }
+        // Admin users will NOT receive program_created notifications (removed as per requirements)
         
         // EXCO users will NOT receive notifications when programs are created
         // (This section has been removed - no notifications for EXCO users)

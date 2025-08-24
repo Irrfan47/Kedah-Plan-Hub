@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { getPrograms, getQueries, downloadDocument, viewDocument, answerQuery, uploadDocument, deleteDocument, updateProgram, createQuery, getUsers, BASE_URL, replaceDocument } from '../api/backend';
 import DocumentHistoryModal from '@/components/DocumentHistoryModal';
 
@@ -57,6 +58,11 @@ export default function Query() {
   });
   const [userMap, setUserMap] = useState<{ [id: string]: string }>({});
   const [editCustomDocuments, setEditCustomDocuments] = useState<any[]>([]);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [currentHistoryPage, setCurrentHistoryPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Custom document functions for edit mode
   const addEditCustomDocument = () => {
@@ -171,7 +177,9 @@ export default function Query() {
   };
 
   useEffect(() => {
-    getPrograms().then(res => {
+    // For EXCO users, only fetch their own programs
+    const excoUserId = user?.role === 'exco_user' ? user?.id : null;
+    getPrograms(excoUserId).then(res => {
       if (res.success && res.programs) setPrograms(res.programs);
     });
     
@@ -190,6 +198,12 @@ export default function Query() {
         console.error('Failed to fetch users:', error);
     });
   }, []);
+
+  // Reset pagination when programs data changes
+  useEffect(() => {
+    setCurrentPage(1);
+    setCurrentHistoryPage(1);
+  }, [programs]);
 
   // Initialize custom documents when edit modal opens
   useEffect(() => {
@@ -225,7 +239,8 @@ export default function Query() {
         setNewQuery('');
         setIsQueryModalOpen(false);
         // Refresh programs to get updated status
-        const programsResponse = await getPrograms();
+        const excoUserId = user?.role === 'exco_user' ? user?.id : null;
+        const programsResponse = await getPrograms(excoUserId);
         if (programsResponse.success) {
           setPrograms(programsResponse.programs);
         }
@@ -253,7 +268,8 @@ export default function Query() {
       if (res.success) {
         toast({ title: t('common.success'), description: t('queries.answered_successfully') });
         // Refresh the programs to get updated status and queries
-        const programsResponse = await getPrograms();
+        const excoUserId = user?.role === 'exco_user' ? user?.id : null;
+        const programsResponse = await getPrograms(excoUserId);
         if (programsResponse.success) {
           setPrograms(programsResponse.programs);
         }
@@ -479,7 +495,8 @@ export default function Query() {
       toast({ title: t('common.success'), description: t('programs.updated_successfully') });
       
       // Refresh programs to get updated document list
-      const programsResponse = await getPrograms();
+      const excoUserId = user?.role === 'exco_user' ? user?.id : null;
+      const programsResponse = await getPrograms(excoUserId);
       if (programsResponse.success) {
         setPrograms(programsResponse.programs);
         
@@ -557,7 +574,8 @@ export default function Query() {
       
       // Also refresh the selected program for the View Details Modal
       if (selectedProgram) {
-        const refreshProgram = await getPrograms();
+        const excoUserId = user?.role === 'exco_user' ? user?.id : null;
+        const refreshProgram = await getPrograms(excoUserId);
         if (refreshProgram.success) {
           const refreshedProgram = refreshProgram.programs.find(p => p.id === selectedProgram.id);
           if (refreshedProgram) {
@@ -573,8 +591,30 @@ export default function Query() {
     }
   };
 
+  // Active queries - programs with 'query' status
   const activeQueries = programs.filter(p => p.status === 'query');
-  const answeredQueries = programs.filter(p => p.status === 'query_answered' || p.status === 'payment_completed');
+  
+  // Answered queries - programs with 'query_answered' status (exclude payment_completed)
+  const answeredQueries = programs.filter(p => p.status === 'query_answered');
+  
+  // For Query History table: show all programs with queries > 0 (regardless of status)
+  const allProgramsWithQueries = programs.filter(p => p.queries && p.queries.length > 0);
+  
+  // Filter out programs with 0 queries from display (but keep them in the counts)
+  const activeQueriesWithQueries = activeQueries.filter(p => p.queries && p.queries.length > 0);
+  const answeredQueriesWithQueries = answeredQueries.filter(p => p.queries && p.queries.length > 0);
+  
+  // Pagination logic for active queries (using filtered data for display)
+  const totalActivePages = Math.ceil(activeQueriesWithQueries.length / itemsPerPage);
+  const startActiveIndex = (currentPage - 1) * itemsPerPage;
+  const endActiveIndex = startActiveIndex + itemsPerPage;
+  const paginatedActiveQueries = activeQueriesWithQueries.slice(startActiveIndex, endActiveIndex);
+  
+  // Pagination logic for query history (using filtered data for display)
+  const totalHistoryPages = Math.ceil(allProgramsWithQueries.length / itemsPerPage);
+  const startHistoryIndex = (currentHistoryPage - 1) * itemsPerPage;
+  const endHistoryIndex = startHistoryIndex + itemsPerPage;
+  const paginatedAnsweredQueries = allProgramsWithQueries.slice(startHistoryIndex, endHistoryIndex);
 
   const deleteDocumentFromProgram = async (documentId: string) => {
     if (!selectedProgram) {
@@ -591,7 +631,8 @@ export default function Query() {
       if (res.success) {
         toast({ title: t('common.success'), description: t('queries.document_deleted') });
         // Refresh the programs to get updated document list
-        const programsResponse = await getPrograms();
+        const excoUserId = user?.role === 'exco_user' ? user?.id : null;
+        const programsResponse = await getPrograms(excoUserId);
         if (programsResponse.success) {
           setPrograms(programsResponse.programs);
           // Update the selected program with new documents
@@ -648,7 +689,7 @@ export default function Query() {
             <CardTitle className="text-sm font-medium">{t('queries.answered_queries')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{answeredQueries.length}</div>
+            <div className="text-2xl font-bold text-purple-600">{allProgramsWithQueries.length}</div>
           </CardContent>
         </Card>
         
@@ -680,7 +721,7 @@ export default function Query() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activeQueries.map((program) => (
+                {paginatedActiveQueries.map((program) => (
                   <TableRow key={program.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
@@ -1001,6 +1042,41 @@ export default function Query() {
               </TableBody>
             </Table>
           </div>
+          
+          {/* Pagination for Active Queries */}
+          {totalActivePages > 1 && (
+            <div className="mt-4 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: totalActivePages }, (_, i) => i + 1).map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(prev => Math.min(totalActivePages, prev + 1))}
+                      className={currentPage === totalActivePages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1022,7 +1098,7 @@ export default function Query() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {answeredQueries.map((program) => (
+                {paginatedAnsweredQueries.map((program) => (
                   <TableRow key={program.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
@@ -1083,16 +1159,51 @@ export default function Query() {
               </TableBody>
             </Table>
           </div>
+          
+          {/* Pagination for Query History */}
+          {totalHistoryPages > 1 && (
+            <div className="mt-4 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentHistoryPage(prev => Math.max(1, prev - 1))}
+                      className={currentHistoryPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: totalHistoryPages }, (_, i) => i + 1).map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setCurrentHistoryPage(page)}
+                        isActive={currentHistoryPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentHistoryPage(prev => Math.min(totalHistoryPages, prev + 1))}
+                      className={currentHistoryPage === totalHistoryPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Query Details Modal */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Queries - {selectedProgram?.program_name || selectedProgram?.programName}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto max-h-[calc(85vh-140px)] pr-4 pb-4 custom-scrollbar">
             {selectedProgram?.queries.map((query) => (
               <div key={query.id} className="border rounded p-4 space-y-3">
                 <div className="flex justify-between">
@@ -1195,7 +1306,7 @@ export default function Query() {
               <Label htmlFor="editBudget">Budget (RM) *</Label>
               <Input
                 id="editBudget"
-                type="number"
+                type="text"
                 value={editFormData.budget}
                 onChange={(e) => setEditFormData({...editFormData, budget: e.target.value})}
               />

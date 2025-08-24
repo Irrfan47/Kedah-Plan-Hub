@@ -21,6 +21,7 @@ interface Program {
   created_at: string;
   voucher_number?: string;
   eft_number?: string;
+  eft_date?: string;
 }
 
 const getStatusColor = (status: Program['status']) => {
@@ -244,6 +245,7 @@ export default function StatusTracking() {
                   <TableHead>{t('common.date')}</TableHead>
                   <TableHead>{t('status.voucher_no')}</TableHead>
                   <TableHead>{t('status.eft_no')}</TableHead>
+                  <TableHead>{t('status.eft_date')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -262,6 +264,7 @@ export default function StatusTracking() {
                     <TableCell>{new Date(program.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>{program.voucher_number || '-'}</TableCell>
                     <TableCell>{program.eft_number || '-'}</TableCell>
+                    <TableCell>{program.eft_date ? new Date(program.eft_date).toLocaleDateString() : '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

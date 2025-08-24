@@ -279,7 +279,7 @@ export default function Dashboard() {
             {t('nav.dashboard', 'Dashboard')}
           </h1>
           <p className="text-gray-600">
-            {t('dashboard.description', 'Overview of program management activities')}
+            {t('dashboard.subtitle')}
           </p>
         </div>
         
@@ -323,7 +323,7 @@ export default function Dashboard() {
           {t('nav.dashboard', 'Dashboard')}
         </h1>
         <p className="text-gray-600">
-          {t('dashboard.description', 'Overview of program management activities')}
+          {t('dashboard.subtitle')}
         </p>
       </div>
 

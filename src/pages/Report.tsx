@@ -356,7 +356,7 @@ export default function Report() {
                           <TableHead>{t('status.letter_ref')}</TableHead>
                           <TableHead>{t('status.voucher_no')}</TableHead>
                           <TableHead>{t('status.eft_no')}</TableHead>
-                          <TableHead>EFT Date</TableHead>
+                          <TableHead>{t('status.eft_date')}</TableHead>
                           <TableHead>{t('programs.status')}</TableHead>
                         </TableRow>
                       </TableHeader>

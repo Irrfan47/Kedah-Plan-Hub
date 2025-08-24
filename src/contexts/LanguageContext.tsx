@@ -134,6 +134,8 @@ const translations = {
     'profile.confirm_password': 'Confirm New Password',
     'profile.password_help': 'Password must be at least 8 characters long.',
     'profile.change_password_btn': 'Change Password',
+    'profile.portfolio': 'Portfolio',
+    'profile.no_portfolio': 'No portfolio information',
 
     // User Management
     'users.title': 'User Management',
@@ -270,6 +272,7 @@ const translations = {
     'status.letter_ref': 'Letter Ref',
     'status.voucher_no': 'Voucher No.',
     'status.eft_no': 'EFT No.',
+    'status.eft_date': 'EFT Date',
     'status.showing': 'Showing',
     'status.to': 'to',
     'status.of': 'of',
@@ -288,7 +291,7 @@ const translations = {
     'queries.reply': 'Reply',
     'queries.active_queries': 'Active Queries',
     'queries.answered_queries': 'Answered Queries',
-    'queries.total_programs': 'Total Programs with Queries',
+    'queries.total_programs': 'Total Programs',
     'queries.history': 'Query History',
     'queries.total_queries': 'Total Queries',
     'queries.provide_message': 'Please provide a query message',
@@ -501,6 +504,8 @@ const translations = {
     'profile.confirm_password': 'Sahkan Kata Laluan Baharu',
     'profile.password_help': 'Kata laluan mesti sekurang-kurangnya 8 aksara.',
     'profile.change_password_btn': 'Tukar Kata Laluan',
+    'profile.portfolio': 'Portfolio',
+    'profile.no_portfolio': 'Tiada maklumat portfolio',
 
     // User Management
     'users.title': 'Pengurusan Pengguna',
@@ -637,6 +642,7 @@ const translations = {
     'status.letter_ref': 'Rujukan Surat',
     'status.voucher_no': 'No. Voucher',
     'status.eft_no': 'No. EFT',
+    'status.eft_date': 'Tarikh EFT',
     'status.showing': 'Menunjukkan',
     'status.to': 'kepada',
     'status.of': 'daripada',
@@ -655,7 +661,7 @@ const translations = {
     'queries.reply': 'Balas',
     'queries.active_queries': 'Pertanyaan Aktif',
     'queries.answered_queries': 'Query Dijawab',
-    'queries.total_programs': 'Jumlah Program dengan Pertanyaan',
+    'queries.total_programs': 'Jumlah Program',
     'queries.history': 'Sejarah Pertanyaan',
     'queries.total_queries': 'Jumlah Pertanyaan',
     'queries.provide_message': 'Sila berikan mesej pertanyaan',

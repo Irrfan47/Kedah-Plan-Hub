@@ -1309,13 +1309,13 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
                               className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${
                                 isCompleted ? status.color : 'bg-gray-300'
                               } ${isCurrent ? 'ring-4 ring-blue-200' : ''} ${
-                                ((status.key === 'query' || status.key === 'query_answered') && isCompleted && user?.role === 'finance_mmk') ||
+                                ((status.key === 'query' || status.key === 'query_answered') && isCompleted && (user?.role === 'finance_mmk' || user?.role === 'exco_user')) ||
                                 (status.key === 'under_review' && isCompleted)
                                   ? 'cursor-pointer hover:scale-110 transition-transform'
                                   : ''
                               }`}
                               onClick={() => {
-                                if ((status.key === 'query' || status.key === 'query_answered') && isCompleted && user?.role === 'finance_mmk') {
+                                if ((status.key === 'query' || status.key === 'query_answered') && isCompleted && (user?.role === 'finance_mmk' || user?.role === 'exco_user')) {
                                   openQueryDetailsModal(program);
                                 } else if (status.key === 'under_review' && isCompleted) {
                                   openDocumentsModal(program);
@@ -1325,7 +1325,7 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
                               <Icon className={`h-5 w-5 ${isCompleted ? 'text-white' : 'text-gray-500'}`} />
                             </div>
                           </TooltipTrigger>
-                          {(status.key === 'query' || status.key === 'query_answered') && isCompleted && user?.role === 'finance_mmk' ? (
+                          {(status.key === 'query' || status.key === 'query_answered') && isCompleted && (user?.role === 'finance_mmk' || user?.role === 'exco_user') ? (
                             <TooltipContent>
                               <p>Click to view query details</p>
                             </TooltipContent>
@@ -1339,7 +1339,7 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
                       
                       {/* Status Label */}
                       <div className="mt-2 text-center max-w-[140px] px-1">
-                        <div className={`text-xs font-medium ${isCompleted ? 'text-gray-900' : 'text-gray-500'} whitespace-nowrap leading-tight`}>
+                        <div className={`text-xs font-medium ${isCompleted ? 'text-gray-900' : 'text-gray-500'} leading-tight`}>
                           {status.label}
                         </div>
                         {isCompleted && (
@@ -1511,7 +1511,7 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
                   <Label htmlFor="budget">{t('programs.budget_rm')} *</Label>
                   <Input
                     id="budget"
-                    type="number"
+                    type="text"
                     value={formData.budget}
                     onChange={(e) => setFormData({...formData, budget: e.target.value})}
                     placeholder={t('programs.enter_budget_amount')}
@@ -2079,13 +2079,13 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
                     <TableRow>
                       <TableHead className="w-16">No.</TableHead>
                       <TableHead className="w-1/6">{t('programs.program_name')}</TableHead>
+                      <TableHead className="w-1/8">{t('programs.exco_letter_ref')}</TableHead>
                       <TableHead className="w-1/12">{t('programs.budget_rm')}</TableHead>
                       <TableHead className="w-1/8">{t('programs.recipient_name')}</TableHead>
-                      <TableHead className="w-1/8">{t('programs.exco_letter_ref')}</TableHead>
                       <TableHead className="w-1/8">{t('programs.status')}</TableHead>
                       <TableHead className="w-1/8">{t('status.voucher_no')}</TableHead>
                       <TableHead className="w-1/8">{t('status.eft_no')}</TableHead>
-                      <TableHead className="w-1/8">EFT Date</TableHead>
+                      <TableHead className="w-1/8">{t('status.eft_date')}</TableHead>
                       <TableHead className="w-1/6">{t('programs.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -2122,9 +2122,9 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
                               <span>{program.program_name || program.programName}</span>
                             </div>
                           </TableCell>
+                          <TableCell className="text-xs">{program.exco_letter_ref || program.excoLetterRef || '-'}</TableCell>
                           <TableCell>{program.budget}</TableCell>
                           <TableCell>{program.recipient_name || program.recipientName}</TableCell>
-                          <TableCell className="text-xs">{program.exco_letter_ref || program.excoLetterRef || '-'}</TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(program.status || '')}>
                               {t(getStatusLabel(program.status || ''))}
@@ -3181,7 +3181,7 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
               <Label htmlFor="edit-budget">Budget (RM)</Label>
               <Input
                 id="edit-budget"
-                type="number"
+                type="text"
                 value={editFormData.budget}
                 onChange={(e) => setEditFormData({...editFormData, budget: e.target.value})}
                 placeholder="Enter budget amount"
@@ -4017,7 +4017,7 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
                 />
               </div>
               <div>
-                <Label htmlFor="eftDate">EFT Date *</Label>
+                                    <Label htmlFor="eftDate">{t('status.eft_date')} *</Label>
                 <Input
                   id="eftDate"
                   type="date"
@@ -4156,48 +4156,36 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
 
       {/* Query Details Modal */}
       <Dialog open={isQueryDetailsModalOpen} onOpenChange={setIsQueryDetailsModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Queries - {selectedQueryDetails?.program_name || selectedQueryDetails?.programName}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            {selectedQueryDetails && selectedQueryDetails.queries && selectedQueryDetails.queries.length > 0 ? (
+          <div className="space-y-4 overflow-y-auto max-h-[calc(85vh-140px)] pr-4 pb-4 custom-scrollbar">
+                        {selectedQueryDetails && selectedQueryDetails.queries && selectedQueryDetails.queries.length > 0 ? (
               selectedQueryDetails.queries.map((query: any, index: number) => (
-                <div key={query.id || index}>
-                  <Label>Query Details</Label>
-                  <div className="p-4 border rounded bg-muted">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <p className="font-medium text-sm">Query:</p>
-                        <p className="text-sm mt-1">{query.question || query.message || 'No question text available'}</p>
-                      </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {(query.answered === 1 || query.is_answered) ? 'Answered' : 'Pending'}
-                      </Badge>
+                <div key={query.id || index} className="border rounded p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <div>
+                      <p className="font-medium">Query from {userMap[query.created_by || query.createdBy] || query.created_by || query.createdBy || 'Not specified'}</p>
+                      <p className="text-sm text-muted-foreground">{new Date(query.created_at || query.createdAt).toLocaleDateString()}</p>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      <p>Asked by: {query.created_by || 'Unknown'}</p>
-                      <p>Date: {query.created_at ? new Date(query.created_at).toLocaleDateString() : 'Unknown'} at {query.created_at ? new Date(query.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Unknown'}</p>
-                    </div>
+                    <Badge variant={(query.answered === 1 || query.is_answered) ? "default" : "destructive"}>
+                      {(query.answered === 1 || query.is_answered) ? "Answered" : "Pending"}
+                    </Badge>
                   </div>
                   
-                  {/* Show Answer if available */}
+                  <div className="bg-muted p-3 rounded">
+                    <p className="text-sm">{query.question || query.message || 'No question text available'}</p>
+                  </div>
+                  
                   {(query.answered === 1 || query.is_answered) && query.answer && (
-                    <div className="mt-4">
-                      <Label>Answer</Label>
-                      <div className="p-3 border rounded bg-green-50 border-l-4 border-green-500">
-                        <p className="text-sm">{query.answer}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Answered by: {query.answered_by || 'EXCO User'} on {query.answered_at ? new Date(query.answered_at).toLocaleDateString() : 'Unknown'}
-                        </p>
-                      </div>
+                    <div className="bg-green-50 p-3 rounded border-l-4 border-green-400">
+                      <p className="text-sm font-medium text-green-800">Answer:</p>
+                      <p className="text-sm text-green-700">{query.answer}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                      </p>
                     </div>
                   )}
-                  
-                  {/* Debug info - remove this later */}
-                  <div className="mt-2 text-xs text-gray-400">
-                    <p>Debug: answered={query.answered}, is_answered={query.is_answered}, has_answer={!!query.answer}</p>
-                  </div>
                 </div>
               ))
             ) : (
@@ -4269,7 +4257,7 @@ export default function ProgramManagement({ initialUserId, initialUserName }: { 
                     </div>
                     
                     <div>
-                      <Label>EFT Date</Label>
+                                              <Label>{t('status.eft_date')}</Label>
                       <div className="p-3 border rounded bg-muted">
                         <p className="text-sm font-medium">
                           {selectedQueryDetails.eft_date ? new Date(selectedQueryDetails.eft_date).toLocaleDateString('en-MY') : 'Not available'}
